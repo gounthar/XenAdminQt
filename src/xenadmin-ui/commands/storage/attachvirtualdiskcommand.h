@@ -49,7 +49,6 @@ class AttachVirtualDiskCommand : public Command
 
     private:
         bool isVMSelected() const;
-        QString getSelectedVMRef() const;
 
         void performAttachment(AttachVirtualDiskDialog* dialog, QSharedPointer<VM> vm);
 };

@@ -48,7 +48,6 @@ class AddVirtualDiskCommand : public Command
     private:
         bool isSRSelected() const;
         bool isVMSelected() const;
-        QString getSelectedRef() const;
         bool canAddDisk() const;
 };
 

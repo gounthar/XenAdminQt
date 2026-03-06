@@ -82,11 +82,14 @@ class XENLIB_EXPORT VM : public XenObject
 
         bool IsLocked() const override;
 
-        //! Check if this is a default template (C# DefaultTemplate)
-        bool DefaultTemplate() const;
+        //! Check if this is a default template (C# IsDefaultTemplate)
+        bool IsDefaultTemplate() const;
 
-        //! Check if this is an internal template (C# InternalTemplate)
-        bool InternalTemplate() const;
+        //! Check if this is an instant template (C# IsInstantTemplate)
+        bool IsInstantTemplate() const;
+
+        //! Check if this is an internal template (C# IsInternalTemplate)
+        bool IsInternalTemplate() const;
 
         //! Check if this object should be shown in the UI
         bool IsVisible(bool showHiddenVMs) const;

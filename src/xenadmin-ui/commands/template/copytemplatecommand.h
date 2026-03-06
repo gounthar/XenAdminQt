@@ -49,8 +49,6 @@ class CopyTemplateCommand : public Command
     private:
         QString getSelectedTemplateRef() const;
         bool canRunTemplate(const QSharedPointer<VM>& templateVm) const;
-        bool isInternalTemplate(const QSharedPointer<VM>& templateVm) const;
-        bool isDefaultTemplate(const QSharedPointer<VM>& templateVm) const;
         bool canLaunchMigrateWizard(const QSharedPointer<VM>& templateVm) const;
 };
 

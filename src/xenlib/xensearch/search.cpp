@@ -785,7 +785,7 @@ QList<QPair<XenObjectType, QString>> Search::getMatchedObjects(XenConnection* co
 
             bool isTemplate = vm->IsTemplate();
             bool isSnapshot = vm->IsSnapshot();
-            bool isDefaultTemplate = vm->DefaultTemplate();
+            bool isDefaultTemplate = vm->IsDefaultTemplate();
 
             if (!isTemplate && !isSnapshot && (types & ObjectTypes::VM) != ObjectTypes::None)
                 typeMatches = true;

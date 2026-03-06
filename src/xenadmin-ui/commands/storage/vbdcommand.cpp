@@ -41,10 +41,3 @@ QSharedPointer<VBD> VBDCommand::getVBD() const
     return qSharedPointerDynamicCast<VBD>(xo);
 }
 
-QString VBDCommand::getSelectedVBDRef() const
-{
-    QSharedPointer<VBD> vbd = this->getVBD();
-    if (vbd)
-        return vbd->OpaqueRef();
-    return QString();
-}

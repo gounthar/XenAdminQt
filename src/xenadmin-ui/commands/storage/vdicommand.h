@@ -53,18 +53,6 @@ class VDICommand : public Command
          * @return Shared pointer to VDI object, or nullptr if not a VDI
          */
         QSharedPointer<VDI> getVDI() const;
-
-        /**
-         * @brief Get selected VDI opaque reference
-         * @return VDI reference or empty string
-         */
-        QString getSelectedVDIRef() const;
-
-        /**
-         * @brief Get selected VDI name
-         * @return VDI name label or empty string
-         */
-        QString getSelectedVDIName() const;
 };
 
 #endif // VDICOMMAND_H

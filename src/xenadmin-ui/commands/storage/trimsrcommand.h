@@ -68,20 +68,6 @@ class TrimSRCommand : public SRCommand
         void setTargetSR(const QString& srRef, XenConnection* connection = nullptr);
 
     private:
-        /**
-         * @brief Check if SR supports trim
-         * @param sr SR data from cache
-         * @return true if SR supports trim
-         */
-        bool supportsTrim(const QSharedPointer<SR> &sr) const;
-
-        /**
-         * @brief Check if SR is attached to any host
-         * @param sr SR data from cache
-         * @return true if at least one PBD is currently attached
-         */
-        bool isAttachedToHost(const QSharedPointer<SR> &sr) const;
-
         QString m_overrideSRRef;
         XenConnection* m_overrideConnection = nullptr;
 };

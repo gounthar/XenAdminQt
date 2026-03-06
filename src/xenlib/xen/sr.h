@@ -220,9 +220,9 @@ class XENLIB_EXPORT SR : public XenObject
          *
          * This matches C# SR.GetFirstAttachedStorageHost()
          *
-         * @return Pointer to first attached Host, or nullptr if none
+         * @return Shared pointer to first attached Host, or null if none
          */
-        class Host* GetFirstAttachedStorageHost() const;
+        QSharedPointer<Host> GetFirstAttachedStorageHost() const;
 
         /**
          * @brief Check if SR has a driver domain VM

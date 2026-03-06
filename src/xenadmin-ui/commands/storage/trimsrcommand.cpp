@@ -25,15 +25,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "trimsrcommand.h"
-#include "../../mainwindow.h"
-#include "xenlib/xen/pbd.h"
-#include "xenlib/xencache.h"
-#include "xenlib/xen/sr.h"
-#include "xenlib/xen/actions/sr/srtrimaction.h"
 #include <QPointer>
 #include <QMessageBox>
 #include <QDebug>
+#include "trimsrcommand.h"
+#include "../../mainwindow.h"
+#include "xenlib/xencache.h"
+#include "xenlib/xen/sr.h"
+#include "xenlib/xen/actions/sr/srtrimaction.h"
 
 TrimSRCommand::TrimSRCommand(MainWindow* mainWindow, QObject* parent) : SRCommand(mainWindow, parent)
 {
@@ -61,14 +60,12 @@ bool TrimSRCommand::CanRun() const
         return false;
 
     // Can trim if SR supports it and is attached to a host
-    return this->supportsTrim(sr) && this->isAttachedToHost(sr);
+    return sr->SupportsTrim() && !sr->GetFirstAttachedStorageHost().isNull();
 }
 
 void TrimSRCommand::Run()
 {
-    QSharedPointer<SR> sr = this->m_overrideSRRef.isEmpty()
-        ? this->getSR()
-        : resolveOverrideSR(this->m_overrideSRRef, this->m_overrideConnection);
+    QSharedPointer<SR> sr = this->m_overrideSRRef.isEmpty() ? this->getSR() : resolveOverrideSR(this->m_overrideSRRef, this->m_overrideConnection);
     if (!sr)
         return;
 
@@ -110,7 +107,7 @@ void TrimSRCommand::Run()
     }
 
     // Connect completion signal for cleanup and status update
-    connect(action, &AsyncOperation::completed, mainWindow, [srName, action, sr, mainWindow]()
+    connect(action, &AsyncOperation::completed, mainWindow, [srName, action, mainWindow]()
     {
         if (action->GetState() == AsyncOperation::Completed && !action->IsFailed())
         {
@@ -129,7 +126,6 @@ void TrimSRCommand::Run()
         }
         // Auto-delete when complete
         action->deleteLater();
-        sr->deleteLater();
     }, Qt::QueuedConnection);
 
     // Run action asynchronously
@@ -139,29 +135,4 @@ void TrimSRCommand::Run()
 QString TrimSRCommand::MenuText() const
 {
     return "Trim SR...";
-}
-
-bool TrimSRCommand::supportsTrim(const QSharedPointer<SR> &sr) const
-{
-    return sr && sr->SupportsTrim();
-}
-
-bool TrimSRCommand::isAttachedToHost(const QSharedPointer<SR> &sr) const
-{
-    if (!sr)
-        return false;
-
-    // Check if any PBD is currently attached
-    QList<QSharedPointer<PBD>> pbds = sr->GetPBDs();
-
-    foreach (QSharedPointer<PBD> pbd, pbds)
-    {
-        if (pbd->IsCurrentlyAttached())
-        {
-            // At least one PBD is attached
-            return true;
-        }
-    }
-
-    return false;
 }

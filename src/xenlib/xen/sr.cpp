@@ -457,14 +457,16 @@ QString SR::HomeRef() const
     return pbdData.value("host").toString();
 }
 
-Host* SR::GetFirstAttachedStorageHost() const
+QSharedPointer<Host> SR::GetFirstAttachedStorageHost() const
 {
     QStringList pbds = this->GetPBDRefs();
     if (pbds.isEmpty())
-        return nullptr;
+        return QSharedPointer<Host>();
 
     // Iterate through PBDs to find first currently_attached one
     XenCache* cache = this->GetCache();
+    if (!cache)
+        return QSharedPointer<Host>();
 
     for (const QString& pbdRef : pbds)
     {
@@ -476,14 +478,14 @@ Host* SR::GetFirstAttachedStorageHost() const
         if (currentlyAttached)
         {
             QString hostRef = pbdData.value("host").toString();
-            if (!hostRef.isEmpty())
+            if (!hostRef.isEmpty() && hostRef != XENOBJECT_NULL)
             {
-                return new Host(GetConnection(), hostRef, nullptr);
+                return cache->ResolveObject<Host>(XenObjectType::Host, hostRef);
             }
         }
     }
 
-    return nullptr;
+    return QSharedPointer<Host>();
 }
 
 bool SR::HasDriverDomain(QString* outVMRef) const

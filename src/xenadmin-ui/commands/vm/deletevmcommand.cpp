@@ -167,7 +167,7 @@ bool DeleteVMCommand::canDeleteVm(const QSharedPointer<VM>& vm, bool allowTempla
         return false;
     }
 
-    if (vm->IsTemplate() && vm->DefaultTemplate())
+    if (vm->IsTemplate() && vm->IsDefaultTemplate())
     {
         if (reason)
             *reason = tr("Default templates cannot be deleted.");

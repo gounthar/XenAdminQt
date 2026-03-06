@@ -37,19 +37,3 @@ QSharedPointer<VDI> VDICommand::getVDI() const
 {
     return qSharedPointerDynamicCast<VDI>(this->GetObject());
 }
-
-QString VDICommand::getSelectedVDIRef() const
-{
-    QSharedPointer<VDI> vdi = this->getVDI();
-    if (vdi)
-        return vdi->OpaqueRef();
-    return QString();
-}
-
-QString VDICommand::getSelectedVDIName() const
-{
-    QSharedPointer<VDI> vdi = this->getVDI();
-    if (vdi)
-        return vdi->GetName();
-    return QString();
-}

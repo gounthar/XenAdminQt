@@ -122,7 +122,7 @@ bool CopyTemplateCommand::canRunTemplate(const QSharedPointer<VM>& templateVm) c
         return false;
 
     // Must not be an internal template
-    if (this->isInternalTemplate(templateVm))
+    if (templateVm->IsInternalTemplate())
         return false;
 
     // Can launch migrate wizard, OR template supports clone/copy
@@ -144,31 +144,13 @@ bool CopyTemplateCommand::canRunTemplate(const QSharedPointer<VM>& templateVm) c
     return cloneAllowed || copyAllowed;
 }
 
-bool CopyTemplateCommand::isInternalTemplate(const QSharedPointer<VM>& templateVm) const
-{
-    // Check if template is internal (built-in XenServer template)
-    // In C#: vm.InternalTemplate()
-    // Usually checks other_config["default_template"] or similar
-
-    QVariantMap otherConfig = templateVm->GetOtherConfig();
-    return otherConfig.value("default_template", false).toBool() ||
-           otherConfig.value("base_template_name", "").toString().isEmpty() == false;
-}
-
-bool CopyTemplateCommand::isDefaultTemplate(const QSharedPointer<VM>& templateVm) const
-{
-    // Check if template is a default template
-    QVariantMap otherConfig = templateVm->GetOtherConfig();
-    return otherConfig.value("default_template", false).toBool();
-}
-
 bool CopyTemplateCommand::canLaunchMigrateWizard(const QSharedPointer<VM>& templateVm) const
 {
     // Can launch migrate wizard if:
     // 1. Not a default template
     // 2. CrossPoolMigrateCommand can run
 
-    if (this->isDefaultTemplate(templateVm))
+    if (templateVm->IsDefaultTemplate())
         return false;
 
     // TODO: Implement CrossPoolMigrateCommand.CanRun check

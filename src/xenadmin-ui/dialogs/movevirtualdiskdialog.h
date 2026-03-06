@@ -74,6 +74,11 @@ class MoveVirtualDiskDialog : public QDialog
          *
          * Returns a configured MigrateVirtualDiskCommand when migration is allowed for
          * all selected VDIs, otherwise falls back to MoveVirtualDiskCommand.
+         *
+         *
+         * TODO we don't seem to allow migration of certain VDIs that require to be attached to some VM
+         * Xen Orchestra does this by temporarily attaching to control domain (for example LVM SR
+         * to LVM SR is blocked in UI when the VM is offline)
          */
         static Command* MoveMigrateCommand(MainWindow* mainWindow, const QList<QSharedPointer<XenObject>>& selection, QObject* parent = nullptr);
 

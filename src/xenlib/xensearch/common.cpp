@@ -712,7 +712,7 @@ QVariant PropertyAccessors::TypeProperty(XenObject* o)
         if (vm->IsTemplate())
         {
             // Distinguish default templates from user templates
-            if (vm->DefaultTemplate())
+            if (vm->IsDefaultTemplate())
                 return QVariant::fromValue(ObjectTypes::DefaultTemplate);
             return QVariant::fromValue(ObjectTypes::UserTemplate);
         }

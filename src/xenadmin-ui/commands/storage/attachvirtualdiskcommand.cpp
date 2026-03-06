@@ -210,9 +210,3 @@ bool AttachVirtualDiskCommand::isVMSelected() const
     return this->getSelectedObjectType() == XenObjectType::VM;
 }
 
-QString AttachVirtualDiskCommand::getSelectedVMRef() const
-{
-    if (!this->isVMSelected())
-        return QString();
-    return this->getSelectedObjectRef();
-}

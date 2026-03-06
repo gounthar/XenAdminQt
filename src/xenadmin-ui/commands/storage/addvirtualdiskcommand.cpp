@@ -255,11 +255,6 @@ bool AddVirtualDiskCommand::isVMSelected() const
     return this->getSelectedObjectType() == XenObjectType::VM;
 }
 
-QString AddVirtualDiskCommand::getSelectedRef() const
-{
-    return this->getSelectedObjectRef();
-}
-
 bool AddVirtualDiskCommand::canAddDisk() const
 {
     QSharedPointer<XenObject> object = this->GetObject();

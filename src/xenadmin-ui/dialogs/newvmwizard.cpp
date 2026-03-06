@@ -53,8 +53,7 @@
 #include "xenlib/xen/sr.h"
 #include "xenlib/vmhelpers.h"
 
-NewVMWizard::NewVMWizard(XenConnection* connection, const QString& defaultTemplateRef, QWidget* parent)
-    : QWizard(parent), m_connection(connection), ui(new Ui::NewVMWizard), m_initialTemplateRef(defaultTemplateRef)
+NewVMWizard::NewVMWizard(XenConnection* connection, const QString& defaultTemplateRef, QWidget* parent) : QWizard(parent), m_connection(connection), ui(new Ui::NewVMWizard), m_initialTemplateRef(defaultTemplateRef)
 {
     this->ui->setupUi(this);
     this->setWindowTitle(tr("New Virtual Machine Wizard"));
@@ -500,7 +499,7 @@ void NewVMWizard::loadTemplateDevices()
     {
         QSharedPointer<VM> templateVm = cache->ResolveObject<VM>(XenObjectType::VM, this->m_selectedTemplate);
         if (templateVm)
-            isDefaultTemplate = templateVm->DefaultTemplate();
+            isDefaultTemplate = templateVm->IsDefaultTemplate();
     }
 
     if (isDefaultTemplate)
@@ -696,13 +695,12 @@ void NewVMWizard::updateHomeServerPage()
         if (!usingCd || isoVdiRef.isEmpty())
         {
             suggestedHost = VMHelpers::getVMStorageHost(this->m_connection, this->m_selectedTemplateRecord, true);
-        }
-        else
+        } else
         {
             QVariantMap vdiData = cache->ResolveObjectData(XenObjectType::VDI, isoVdiRef);
             QString srRef = vdiData.value("SR").toString();
             QSharedPointer<SR> sr = cache->ResolveObject<SR>(XenObjectType::SR, srRef);
-            Host* host = sr ? sr->GetFirstAttachedStorageHost() : nullptr;
+            QSharedPointer<Host> host = sr ? sr->GetFirstAttachedStorageHost() : QSharedPointer<Host>();
             if (host)
                 suggestedHost = host->OpaqueRef();
             if (suggestedHost.isEmpty())
@@ -727,8 +725,7 @@ void NewVMWizard::updateHomeServerPage()
 void NewVMWizard::updateSummaryPage()
 {
     QString templateName;
-    auto it = std::find_if(this->m_templateItems.begin(), this->m_templateItems.end(),
-                           [this](const TemplateInfo& info) { return info.ref == this->m_selectedTemplate; });
+    auto it = std::find_if(this->m_templateItems.begin(), this->m_templateItems.end(), [this](const TemplateInfo& info) { return info.ref == this->m_selectedTemplate; });
     if (it != this->m_templateItems.end())
         templateName = it->name;
 
@@ -737,11 +734,8 @@ void NewVMWizard::updateSummaryPage()
     lines << tr("Name: %1").arg(this->ui->vmNameEdit->text().trimmed());
     if (this->m_supportsVcpuHotplug)
     {
-        lines << tr("vCPUs: %1 (max %2)")
-                     .arg(this->ui->vcpusStartupSpin->value())
-                     .arg(this->ui->vcpusMaxSpin->value());
-    }
-    else
+        lines << tr("vCPUs: %1 (max %2)").arg(this->ui->vcpusStartupSpin->value()).arg(this->ui->vcpusMaxSpin->value());
+    } else
     {
         lines << tr("vCPUs: %1").arg(this->ui->vcpusMaxSpin->value());
     }
@@ -1003,81 +997,81 @@ bool NewVMWizard::validateCurrentPage()
 {
     switch (currentId())
     {
-    case Page_Template:
-        if (this->m_selectedTemplate.isEmpty())
-        {
-            QMessageBox::warning(this, tr("Select Template"),
-                                 tr("Please select a template before continuing."));
-            return false;
-        }
-        break;
-    case Page_Name:
-        if (this->ui->vmNameEdit->text().trimmed().isEmpty())
-        {
-            QMessageBox::warning(this, tr("Enter Name"),
-                                 tr("Please provide a name for the virtual machine."));
-            return false;
-        }
-        break;
-    case Page_InstallationMedia:
-        if (this->ui->urlRadioButton->isChecked() && this->ui->urlLineEdit->text().trimmed().isEmpty())
-        {
-            QMessageBox::warning(this, tr("Installation Source"),
-                                 tr("Specify the URL for the installation media."));
-            return false;
-        }
-        break;
-    case Page_HomeServer:
-        if (this->ui->specificHomeServerRadio->isChecked() && this->ui->homeServerList->selectedItems().isEmpty())
-        {
-            QMessageBox::warning(this, tr("Select Home Server"),
-                                 tr("Choose a home server or allow automatic placement."));
-            return false;
-        }
-        this->syncSelectedHostFromUi();
-        break;
-    case Page_CpuMemory:
-    {
-        int vcpusMax = this->ui->vcpusMaxSpin->value();
-        if (!this->isValidVcpu(vcpusMax))
-        {
-            QMessageBox::warning(this, tr("CPU Topology"),
-                                 tr("The selected vCPU count has no valid topology. Adjust the vCPU count."));
-            return false;
-        }
-
-        int dynMin = this->ui->memoryDynamicMinSpin->value();
-        int dynMax = this->ui->memoryDynamicMaxSpin->value();
-        int staticMax = this->ui->memoryStaticMaxSpin->value();
-        if (!(dynMin <= dynMax && dynMax <= staticMax))
-        {
-            QMessageBox::warning(this, tr("Memory Configuration"),
-                                 tr("Ensure dynamic min ≤ dynamic max ≤ static max."));
-            return false;
-        }
-        break;
-    }
-    case Page_Storage:
-        if (this->ui->disklessCheckBox->isChecked())
-            break;
-        if (this->m_disks.isEmpty())
-        {
-            QMessageBox::warning(this, tr("Storage Configuration"),
-                                 tr("The selected template has no disks. Add a disk before proceeding."));
-            return false;
-        }
-        for (const DiskConfig& disk : this->m_disks)
-        {
-            if (disk.srRef.isEmpty())
+        case Page_Template:
+            if (this->m_selectedTemplate.isEmpty())
             {
-                QMessageBox::warning(this, tr("Storage Configuration"),
-                                     tr("One or more disks have no storage repository selected."));
+                QMessageBox::warning(this, tr("Select Template"),
+                                     tr("Please select a template before continuing."));
                 return false;
             }
+            break;
+        case Page_Name:
+            if (this->ui->vmNameEdit->text().trimmed().isEmpty())
+            {
+                QMessageBox::warning(this, tr("Enter Name"),
+                                     tr("Please provide a name for the virtual machine."));
+                return false;
+            }
+            break;
+        case Page_InstallationMedia:
+            if (this->ui->urlRadioButton->isChecked() && this->ui->urlLineEdit->text().trimmed().isEmpty())
+            {
+                QMessageBox::warning(this, tr("Installation Source"),
+                                     tr("Specify the URL for the installation media."));
+                return false;
+            }
+            break;
+        case Page_HomeServer:
+            if (this->ui->specificHomeServerRadio->isChecked() && this->ui->homeServerList->selectedItems().isEmpty())
+            {
+                QMessageBox::warning(this, tr("Select Home Server"),
+                                     tr("Choose a home server or allow automatic placement."));
+                return false;
+            }
+            this->syncSelectedHostFromUi();
+            break;
+        case Page_CpuMemory:
+        {
+            int vcpusMax = this->ui->vcpusMaxSpin->value();
+            if (!this->isValidVcpu(vcpusMax))
+            {
+                QMessageBox::warning(this, tr("CPU Topology"),
+                                     tr("The selected vCPU count has no valid topology. Adjust the vCPU count."));
+                return false;
+            }
+
+            int dynMin = this->ui->memoryDynamicMinSpin->value();
+            int dynMax = this->ui->memoryDynamicMaxSpin->value();
+            int staticMax = this->ui->memoryStaticMaxSpin->value();
+            if (!(dynMin <= dynMax && dynMax <= staticMax))
+            {
+                QMessageBox::warning(this, tr("Memory Configuration"),
+                                     tr("Ensure dynamic min ≤ dynamic max ≤ static max."));
+                return false;
+            }
+            break;
         }
-        break;
-    default:
-        break;
+        case Page_Storage:
+            if (this->ui->disklessCheckBox->isChecked())
+                break;
+            if (this->m_disks.isEmpty())
+            {
+                QMessageBox::warning(this, tr("Storage Configuration"),
+                                     tr("The selected template has no disks. Add a disk before proceeding."));
+                return false;
+            }
+            for (const DiskConfig& disk : this->m_disks)
+            {
+                if (disk.srRef.isEmpty())
+                {
+                    QMessageBox::warning(this, tr("Storage Configuration"),
+                                         tr("One or more disks have no storage repository selected."));
+                    return false;
+                }
+            }
+            break;
+        default:
+            break;
     }
 
     return QWizard::validateCurrentPage();
@@ -1087,13 +1081,13 @@ int NewVMWizard::nextId() const
 {
     switch (this->currentId())
     {
-    case Page_CpuMemory:
-        return this->m_gpuPageEnabled ? Page_Gpu : Page_Storage;
-    case Page_Gpu:
-        return Page_Storage;
-    default:
-        return QWizard::nextId();
-    }
+        case Page_CpuMemory:
+            return this->m_gpuPageEnabled ? Page_Gpu : Page_Storage;
+        case Page_Gpu:
+            return Page_Storage;
+        default:
+            return QWizard::nextId();
+        }
 }
 
 void NewVMWizard::accept()
@@ -1138,16 +1132,14 @@ void NewVMWizard::createVirtualMachine()
 
     if (this->m_selectedTemplate.isEmpty())
     {
-        QMessageBox::warning(this, tr("No Template Selected"),
-                             tr("Please select a template to create the VM from."));
+        QMessageBox::warning(this, tr("No Template Selected"), tr("Please select a template to create the VM from."));
         return;
     }
 
     XenConnection* connection = this->m_connection;
     if (!connection->GetSession())
     {
-        QMessageBox::critical(this, tr("Connection Error"),
-                              tr("Unable to configure devices because the Xen connection is no longer valid."));
+        QMessageBox::critical(this, tr("Connection Error"), tr("Unable to configure devices because the Xen connection is no longer valid."));
         return;
     }
     CreateVMAction::InstallMethod installMethod = CreateVMAction::InstallMethod::None;
@@ -1581,8 +1573,7 @@ void NewVMWizard::onAttachIsoLibraryClicked()
 {
     if (!this->m_connection)
     {
-        QMessageBox::warning(this, tr("No Connection"),
-                             tr("Unable to open the ISO library wizard because there is no active connection."));
+        QMessageBox::warning(this, tr("No Connection"), tr("Unable to open the ISO library wizard because there is no active connection."));
         return;
     }
 
@@ -1641,5 +1632,5 @@ void NewVMWizard::onDiskContextMenuRequested(const QPoint& pos)
 
 XenCache* NewVMWizard::cache() const
 {
-    return m_connection ? m_connection->GetCache() : nullptr;
+    return this->m_connection ? this->m_connection->GetCache() : nullptr;
 }

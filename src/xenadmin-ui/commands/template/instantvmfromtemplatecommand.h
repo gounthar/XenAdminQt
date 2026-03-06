@@ -49,7 +49,6 @@ class InstantVMFromTemplateCommand : public Command
     private:
         QString getSelectedTemplateRef() const;
         bool canRunTemplate(const QSharedPointer<VM>& templateVm) const;
-        bool isInstantTemplate(const QSharedPointer<VM>& templateVm) const;
 };
 
 #endif // INSTANTVMFROMTEMPLATECOMMAND_H

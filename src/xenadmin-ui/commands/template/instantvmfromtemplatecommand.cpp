@@ -117,19 +117,8 @@ bool InstantVMFromTemplateCommand::canRunTemplate(const QSharedPointer<VM>& temp
         return false;
 
     // Must be an instant template
-    if (!this->isInstantTemplate(templateVm))
+    if (!templateVm->IsInstantTemplate())
         return false;
 
     return true;
-}
-
-bool InstantVMFromTemplateCommand::isInstantTemplate(const QSharedPointer<VM>& templateVm) const
-{
-    // TODO: Check if template has InstantTemplate flag
-    // In C#: vm.InstantTemplate()
-    // May need to check other_config["instant"] or similar field
-
-    // For now, check if template has provisions field
-    QVariantMap provisions = templateVm->GetData().value("provisions", QVariantMap()).toMap();
-    return !provisions.isEmpty();
 }

@@ -107,21 +107,27 @@ bool VM::IsLocked() const
     return this->boolProperty("locked", false);
 }
 
-bool VM::DefaultTemplate() const
+bool VM::IsDefaultTemplate() const
 {
     const QVariantMap otherConfig = this->GetOtherConfig();
     const QVariant value = otherConfig.value("default_template");
     return value.isValid() && value.toBool();
 }
 
-bool VM::InternalTemplate() const
+bool VM::IsInstantTemplate() const
+{
+    const QVariantMap otherConfig = this->GetOtherConfig();
+    return otherConfig.value("instant").toString() == QStringLiteral("true");
+}
+
+bool VM::IsInternalTemplate() const
 {
     return this->GetOtherConfig().contains("xensource_internal");
 }
 
 bool VM::IsVisible(bool showHiddenVMs) const
 {
-    if (this->InternalTemplate())
+    if (this->IsInternalTemplate())
         return false;
 
     const QString name = GetName();
