@@ -187,8 +187,8 @@ class XENLIB_EXPORT SR : public XenObject
          */
         QSharedPointer<Host> GetHost() const;
 
-        QString NameWithLocation() const override;
-        QString LocationString() const override;
+        QString GetNameWithLocation() const override;
+        QString GetLocationString() const override;
 
         //! Check if SR is local (not shared, local to single host)
         bool IsLocal() const

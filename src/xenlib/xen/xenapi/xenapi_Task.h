@@ -29,6 +29,7 @@
 #define XENAPI_TASK_H
 
 #include <QString>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -38,43 +39,43 @@ namespace XenAPI
     /// Static methods for XenAPI Task operations (XAPI object: task)
     /// A long-running asynchronous task
     /// </summary>
-    class Task
+    class XENLIB_EXPORT Task
     {
-    private:
-        Task() {} // Private constructor - this is a static-only class
-        
-    public:
-        /// <summary>
-        /// Create a new task object
-        /// </summary>
-        /// <param name="session">The session</param>
-        /// <param name="_label">short label for the new task</param>
-        /// <param name="_description">longer description for the new task</param>
-        /// <returns>Reference to the created task</returns>
-        static QString Create(Session* session, const QString& label, const QString& description);
-        
-        /// <summary>
-        /// Destroy the task object
-        /// </summary>
-        /// <param name="session">The session</param>
-        /// <param name="_task">The opaque_ref of the given task</param>
-        static void Destroy(Session* session, const QString& taskRef);
-        
-        /// <summary>
-        /// Request that a task be cancelled
-        /// </summary>
-        /// <param name="session">The session</param>
-        /// <param name="_task">The opaque_ref of the given task</param>
-        static void Cancel(Session* session, const QString& taskRef);
+        private:
+            Task() {} // Private constructor - this is a static-only class
 
-        /// <summary>
-        /// Add a key/value to task.other_config
-        /// </summary>
-        /// <param name="session">The session</param>
-        /// <param name="_task">Task opaque ref</param>
-        /// <param name="key">Key</param>
-        /// <param name="value">Value</param>
-        static void add_to_other_config(Session* session, const QString& taskRef, const QString& key, const QString& value);
+        public:
+            /// <summary>
+            /// Create a new task object
+            /// </summary>
+            /// <param name="session">The session</param>
+            /// <param name="_label">short label for the new task</param>
+            /// <param name="_description">longer description for the new task</param>
+            /// <returns>Reference to the created task</returns>
+            static QString Create(Session* session, const QString& label, const QString& description);
+
+            /// <summary>
+            /// Destroy the task object
+            /// </summary>
+            /// <param name="session">The session</param>
+            /// <param name="_task">The opaque_ref of the given task</param>
+            static void Destroy(Session* session, const QString& taskRef);
+
+            /// <summary>
+            /// Request that a task be cancelled
+            /// </summary>
+            /// <param name="session">The session</param>
+            /// <param name="_task">The opaque_ref of the given task</param>
+            static void Cancel(Session* session, const QString& taskRef);
+
+            /// <summary>
+            /// Add a key/value to task.other_config
+            /// </summary>
+            /// <param name="session">The session</param>
+            /// <param name="_task">Task opaque ref</param>
+            /// <param name="key">Key</param>
+            /// <param name="value">Value</param>
+            static void add_to_other_config(Session* session, const QString& taskRef, const QString& key, const QString& value);
     };
 }
 

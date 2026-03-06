@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantMap>
 #include <QStringList>
+#include "xenlib_global.h"
 
 /**
  * @brief XenAPI VM_appliance bindings - static methods only
@@ -44,7 +45,7 @@ namespace XenAPI
 {
     class Session;
 
-    class VM_appliance
+    class XENLIB_EXPORT VM_appliance
     {
         public:
             // Prevent instantiation - this is a static-only class

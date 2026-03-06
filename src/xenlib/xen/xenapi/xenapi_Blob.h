@@ -28,9 +28,9 @@
 #ifndef XENAPI_BLOB_H
 #define XENAPI_BLOB_H
 
-#include "../../xenlib_global.h"
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
+#include "../../xenlib_global.h"
 
 namespace XenAPI
 {

@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include "../../xenlib_global.h"
 
 namespace XenAPI
 {
@@ -42,7 +43,7 @@ namespace XenAPI
      * Static-only class providing XenServer Bond API calls.
      * Matches C# XenModel/XenAPI/Bond.cs structure.
      */
-    class Bond
+    class XENLIB_EXPORT Bond
     {
         private:
             Bond() = delete; // Static-only class

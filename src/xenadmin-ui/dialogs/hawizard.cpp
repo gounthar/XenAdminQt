@@ -978,7 +978,7 @@ bool HAWizard::isRestartPriority(const QString& priority) const
 
 bool HAWizard::isVmProtectable(const QSharedPointer<VM>& vm) const
 {
-    return vm && vm->IsValid() && !vm->IsTemplate() && !vm->IsControlDomain() && !vm->IsSnapshot() && vm->Show(false);
+    return vm && vm->IsValid() && !vm->IsTemplate() && !vm->IsControlDomain() && !vm->IsSnapshot() && vm->IsVisible(false);
 }
 
 QString HAWizard::normalizePriority(const QString& priority) const

@@ -144,22 +144,22 @@ QSharedPointer<Host> SR::GetHost() const
     return QSharedPointer<Host>();
 }
 
-QString SR::NameWithLocation() const
+QString SR::GetNameWithLocation() const
 {
     // Return only the name for local SRs (matches C#)
     if (this->GetConnection() && !this->IsShared())
         return GetName();
 
-    return XenObject::NameWithLocation();
+    return XenObject::GetNameWithLocation();
 }
 
-QString SR::LocationString() const
+QString SR::GetLocationString() const
 {
     QSharedPointer<Host> home = GetHost();
     if (home)
-        return home->LocationString();
+        return home->GetLocationString();
 
-    return XenObject::LocationString();
+    return XenObject::GetLocationString();
 }
 
 QStringList SR::GetVDIRefs() const

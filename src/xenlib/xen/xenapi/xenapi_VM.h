@@ -28,12 +28,12 @@
 #ifndef XENAPI_VM_H
 #define XENAPI_VM_H
 
-#include "../../xenlib_global.h"
 #include <QtCore/QHash>
 #include <QtCore/QList>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QVariant>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

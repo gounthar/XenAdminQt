@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -42,7 +43,7 @@ namespace XenAPI
      * Static-only class providing XenServer VIF API calls.
      * Matches C# XenModel/XenAPI/VIF.cs structure.
      */
-    class VIF
+    class XENLIB_EXPORT VIF
     {
         private:
             VIF() = delete; // Static-only class

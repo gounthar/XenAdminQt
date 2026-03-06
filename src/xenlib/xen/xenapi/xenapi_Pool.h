@@ -32,6 +32,7 @@
 #include <QStringList>
 #include <QVariant>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -42,7 +43,7 @@ namespace XenAPI
      *
      * Static-only class providing XenAPI Pool method bindings.
      */
-    class Pool
+    class XENLIB_EXPORT Pool
     {
         private:
             Pool() = delete; // Static-only class

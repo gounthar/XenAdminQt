@@ -30,6 +30,7 @@
 
 #include <QString>
 #include <QStringList>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -38,64 +39,62 @@ namespace XenAPI
 
 namespace XenAPI
 {
+    /**
+     * @brief Static XenAPI bindings for PGPU (Physical GPU) operations
+     *
+     * Provides static methods for PGPU management matching the C# XenAPI.PGPU class.
+     * All methods are synchronous and block until the API call completes.
+     *
+     * Physical GPUs (PGPUs) represent GPU devices on XenServer hosts. They can be
+     * configured to support different VGPU types, allowing VMs to use virtual GPUs.
+     *
+     * C# equivalent: XenAPI.PGPU
+     */
+    class XENLIB_EXPORT PGPU
+    {
+        private:
+            PGPU() = delete; // Static-only class
 
-/**
- * @brief Static XenAPI bindings for PGPU (Physical GPU) operations
- *
- * Provides static methods for PGPU management matching the C# XenAPI.PGPU class.
- * All methods are synchronous and block until the API call completes.
- *
- * Physical GPUs (PGPUs) represent GPU devices on XenServer hosts. They can be
- * configured to support different VGPU types, allowing VMs to use virtual GPUs.
- *
- * C# equivalent: XenAPI.PGPU
- */
-class PGPU
-{
-    private:
-        PGPU() = delete; // Static-only class
+        public:
+            static QString enable_dom0_access(Session* session, const QString& pgpu);
+            static QString async_enable_dom0_access(Session* session, const QString& pgpu);
+            static QString disable_dom0_access(Session* session, const QString& pgpu);
+            static QString async_disable_dom0_access(Session* session, const QString& pgpu);
 
-    public:
-        static QString enable_dom0_access(Session* session, const QString& pgpu);
-        static QString async_enable_dom0_access(Session* session, const QString& pgpu);
-        static QString disable_dom0_access(Session* session, const QString& pgpu);
-        static QString async_disable_dom0_access(Session* session, const QString& pgpu);
+            /**
+             * @brief Set the enabled VGPU types for a physical GPU
+             *
+             * Configures which VGPU types can be created on this PGPU. Only enabled
+             * VGPU types can be used by VMs.
+             *
+             * First published in XenServer 6.2 SP1 Tech-Preview.
+             *
+             * @param session XenServer session
+             * @param pgpu PGPU opaque reference
+             * @param value List of VGPU_type opaque references to enable
+             * @throws std::runtime_error if the API call fails
+             *
+             * C# equivalent: PGPU.set_enabled_VGPU_types()
+             */
+            static void set_enabled_VGPU_types(Session* session, const QString& pgpu, const QStringList& value);
 
-        /**
-         * @brief Set the enabled VGPU types for a physical GPU
-         *
-         * Configures which VGPU types can be created on this PGPU. Only enabled
-         * VGPU types can be used by VMs.
-         *
-         * First published in XenServer 6.2 SP1 Tech-Preview.
-         *
-         * @param session XenServer session
-         * @param pgpu PGPU opaque reference
-         * @param value List of VGPU_type opaque references to enable
-         * @throws std::runtime_error if the API call fails
-         *
-         * C# equivalent: PGPU.set_enabled_VGPU_types()
-         */
-        static void set_enabled_VGPU_types(Session* session, const QString& pgpu, const QStringList& value);
-
-        /**
-         * @brief Asynchronously set the enabled VGPU types for a physical GPU
-         *
-         * Returns immediately with a task reference. Use Task polling to track completion.
-         *
-         * First published in XenServer 6.2 SP1 Tech-Preview.
-         *
-         * @param session XenServer session
-         * @param pgpu PGPU opaque reference
-         * @param value List of VGPU_type opaque references to enable
-         * @return Task opaque reference
-         * @throws std::runtime_error if the API call fails
-         *
-         * C# equivalent: PGPU.async_set_enabled_VGPU_types()
-         */
-        static QString async_set_enabled_VGPU_types(Session* session, const QString& pgpu, const QStringList& value);
-};
-
+            /**
+             * @brief Asynchronously set the enabled VGPU types for a physical GPU
+             *
+             * Returns immediately with a task reference. Use Task polling to track completion.
+             *
+             * First published in XenServer 6.2 SP1 Tech-Preview.
+             *
+             * @param session XenServer session
+             * @param pgpu PGPU opaque reference
+             * @param value List of VGPU_type opaque references to enable
+             * @return Task opaque reference
+             * @throws std::runtime_error if the API call fails
+             *
+             * C# equivalent: PGPU.async_set_enabled_VGPU_types()
+             */
+            static QString async_set_enabled_VGPU_types(Session* session, const QString& pgpu, const QStringList& value);
+    };
 } // namespace XenAPI
 
 #endif // XENAPI_PGPU_H

@@ -51,7 +51,7 @@ QString Pool::GetName() const
     return master ? master->GetName() : QString();
 }
 
-QString Pool::LocationString() const
+QString Pool::GetLocationString() const
 {
     return QString();
 }

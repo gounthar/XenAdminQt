@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantMap>
 #include <QVariantList>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -42,7 +43,7 @@ namespace XenAPI
      * Qt port of C# XenAPI.VBD class. All methods are static and match
      * the C# signatures exactly for easy porting.
      */
-    class VBD
+    class XENLIB_EXPORT VBD
     {
         private:
             VBD() = delete; // Static-only class

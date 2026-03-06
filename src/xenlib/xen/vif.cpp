@@ -70,12 +70,12 @@ qint64 VIF::GetMTU() const
     return this->longProperty("MTU", 1500);
 }
 
-bool VIF::CurrentlyAttached() const
+bool VIF::IsCurrentlyAttached() const
 {
     return this->boolProperty("currently_attached", false);
 }
 
-qint64 VIF::StatusCode() const
+qint64 VIF::GetStatusCode() const
 {
     return this->longProperty("status_code", 0);
 }

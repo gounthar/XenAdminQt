@@ -413,7 +413,7 @@ void NetworkTabPage::populateVIFsForVM()
 
         // Column 6: Active status (currently_attached)
         // C#: AttachedCell.Value = Vif.currently_attached ? Messages.YES : Messages.NO;
-        bool attached = vif->CurrentlyAttached();
+        bool attached = vif->IsCurrentlyAttached();
         QString activeText = attached ? tr("Yes") : tr("No");
         this->ui->networksTable->setItem(row, 6, new QTableWidgetItem(activeText));
     }
@@ -1444,7 +1444,7 @@ void NetworkTabPage::onActivateToggle()
         return;
 
     QString vifRef = vif->OpaqueRef();
-    bool currentlyAttached = vif->CurrentlyAttached();
+    bool currentlyAttached = vif->IsCurrentlyAttached();
 
     if (currentlyAttached)
     {
@@ -1597,7 +1597,7 @@ void NetworkTabPage::updateButtonStates()
 
         if (hasSelection)
         {
-            bool currentlyAttached = vif->CurrentlyAttached();
+            bool currentlyAttached = vif->IsCurrentlyAttached();
             QStringList allowedOps = vif->AllowedOperations();
 
             // Check if unplug or plug is allowed

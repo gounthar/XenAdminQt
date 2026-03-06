@@ -30,6 +30,7 @@
 
 #include <QString>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -41,7 +42,7 @@ namespace XenAPI
      * Static class providing XenAPI bindings for VGPU operations.
      * Manages virtual GPU assignments to VMs.
      */
-    class VGPU
+    class XENLIB_EXPORT VGPU
     {
         private:
             VGPU() = delete; // Static-only class

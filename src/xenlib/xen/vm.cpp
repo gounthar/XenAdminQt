@@ -56,27 +56,27 @@ QString VM::GetPowerState() const
     return this->stringProperty("power_state");
 }
 
-QString VM::NameWithLocation() const
+QString VM::GetNameWithLocation() const
 {
     if (this->GetConnection())
     {
         if (IsRealVM())
-            return XenObject::NameWithLocation();
+            return XenObject::GetNameWithLocation();
 
         if (IsSnapshot())
         {
             QSharedPointer<VM> snapshotOf = this->SnapshotOf();
             if (snapshotOf)
             {
-                return QString("%1 (snapshot of '%2' %3)").arg(GetName(), snapshotOf->GetName(), LocationString());
+                return QString("%1 (snapshot of '%2' %3)").arg(GetName(), snapshotOf->GetName(), GetLocationString());
             }
         }
     }
 
-    return XenObject::NameWithLocation();
+    return XenObject::GetNameWithLocation();
 }
 
-QString VM::LocationString() const
+QString VM::GetLocationString() const
 {
     QSharedPointer<Host> server = GetHome();
     if (server)
@@ -119,7 +119,7 @@ bool VM::InternalTemplate() const
     return this->GetOtherConfig().contains("xensource_internal");
 }
 
-bool VM::Show(bool showHiddenVMs) const
+bool VM::IsVisible(bool showHiddenVMs) const
 {
     if (this->InternalTemplate())
         return false;
@@ -455,14 +455,14 @@ QSharedPointer<SR> VM::GetSuspendSR()
     return cache->ResolveObject<SR>(ref);
 }
 
-QString VM::SnapshotOfRef() const
+QString VM::GetSnapshotOfRef() const
 {
     return stringProperty("snapshot_of");
 }
 
 QSharedPointer<VM> VM::SnapshotOf() const
 {
-    QString snapshot_of_ref = this->SnapshotOfRef();
+    QString snapshot_of_ref = this->GetSnapshotOfRef();
     if (snapshot_of_ref.isEmpty())
         return QSharedPointer<VM>();
     return this->GetCache()->ResolveObject<VM>(XenObjectType::VM, snapshot_of_ref);

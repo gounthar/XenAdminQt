@@ -28,9 +28,9 @@
 #ifndef XENAPI_SESSION_H
 #define XENAPI_SESSION_H
 
-#include "../../xenlib_global.h"
 #include <QString>
 #include <QStringList>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

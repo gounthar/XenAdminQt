@@ -28,8 +28,8 @@
 #ifndef XENAPI_GPU_GROUP_H
 #define XENAPI_GPU_GROUP_H
 
-#include "../../xenlib_global.h"
 #include <QString>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

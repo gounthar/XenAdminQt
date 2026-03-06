@@ -28,12 +28,12 @@
 #ifndef XENAPI_USERDETAILS_H
 #define XENAPI_USERDETAILS_H
 
-#include "../../xenlib_global.h"
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
 #include <QMutex>
 #include <QHash>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

@@ -28,12 +28,12 @@
 #ifndef XENAPI_HOST_H
 #define XENAPI_HOST_H
 
-#include "../../xenlib_global.h"
 #include <QString>
 #include <QStringList>
 #include <QVariant>
 #include <QHash>
 #include <QList>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

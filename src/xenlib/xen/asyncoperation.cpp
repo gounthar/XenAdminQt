@@ -363,7 +363,7 @@ void AsyncOperation::SetVM(QSharedPointer<VM> vm)
         // If this is a snapshot, add the parent VM instead (matches C# ActionBase.VM setter)
         if (vm->IsSnapshot())
         {
-            QString parentRef = vm->SnapshotOfRef();
+            QString parentRef = vm->GetSnapshotOfRef();
             if (!parentRef.isEmpty())
             {
                 ref = parentRef;

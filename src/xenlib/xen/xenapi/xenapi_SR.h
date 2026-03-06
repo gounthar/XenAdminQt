@@ -32,6 +32,7 @@
 #include <QStringList>
 #include <QVariantMap>
 #include <QVariantList>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -43,7 +44,7 @@ namespace XenAPI
      * Static-only class providing XenAPI SR method bindings.
      * Matches C# XenAPI.SR class from XenModel/XenAPI/SR.cs
      */
-    class SR
+    class XENLIB_EXPORT SR
     {
         private:
             SR() = delete; // Static-only class

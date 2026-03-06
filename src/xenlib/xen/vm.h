@@ -74,8 +74,8 @@ class XENLIB_EXPORT VM : public XenObject
         //! Get VM power state ("Running", "Halted", "Suspended", "Paused")
         QString GetPowerState() const;
 
-        QString NameWithLocation() const override;
-        QString LocationString() const override;
+        QString GetNameWithLocation() const override;
+        QString GetLocationString() const override;
 
         //! Check if this is a template
         bool IsTemplate() const;
@@ -89,7 +89,7 @@ class XENLIB_EXPORT VM : public XenObject
         bool InternalTemplate() const;
 
         //! Check if this object should be shown in the UI
-        bool Show(bool showHiddenVMs) const;
+        bool IsVisible(bool showHiddenVMs) const;
 
         //! Check if this is a snapshot
         bool IsSnapshot() const;
@@ -135,7 +135,7 @@ class XENLIB_EXPORT VM : public XenObject
         QSharedPointer<SR> GetSuspendSR();
 
         //! Get snapshot parent reference (if this is a snapshot)
-        QString SnapshotOfRef() const;
+        QString GetSnapshotOfRef() const;
 
         QSharedPointer<VM> SnapshotOf() const;
 

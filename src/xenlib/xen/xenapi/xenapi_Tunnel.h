@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -44,7 +45,7 @@ namespace XenAPI
      *
      * First published in XenServer 5.6 FP1.
      */
-    class Tunnel
+    class XENLIB_EXPORT Tunnel
     {
         private:
             Tunnel() = delete; // Static-only class

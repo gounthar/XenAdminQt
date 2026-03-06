@@ -29,6 +29,7 @@
 #define XENAPI_CLUSTER_HOST_H
 
 #include <QString>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -40,7 +41,7 @@ namespace XenAPI
      * Static-only class providing XenServer Cluster_host API calls.
      * Matches C# XenModel/XenAPI/Cluster_host.cs structure.
      */
-    class Cluster_host
+    class XENLIB_EXPORT Cluster_host
     {
         private:
             Cluster_host() = delete; // Static-only class

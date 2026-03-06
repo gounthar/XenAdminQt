@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -42,7 +43,7 @@ namespace XenAPI
      * Static-only class providing XenServer PIF API calls.
      * Matches C# XenModel/XenAPI/PIF.cs structure.
      */
-    class PIF
+    class XENLIB_EXPORT PIF
     {
         private:
             PIF() = delete; // Static-only class

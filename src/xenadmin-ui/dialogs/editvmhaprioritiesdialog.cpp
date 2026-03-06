@@ -456,7 +456,7 @@ bool EditVmHaPrioritiesDialog::isRestartPriority(const QString& priority) const
 
 bool EditVmHaPrioritiesDialog::isVmProtectable(const QSharedPointer<VM>& vm) const
 {
-    return vm && vm->IsValid() && !vm->IsTemplate() && !vm->IsControlDomain() && !vm->IsSnapshot() && vm->Show(false);
+    return vm && vm->IsValid() && !vm->IsTemplate() && !vm->IsControlDomain() && !vm->IsSnapshot() && vm->IsVisible(false);
 }
 
 void EditVmHaPrioritiesDialog::updateOkButtonState()

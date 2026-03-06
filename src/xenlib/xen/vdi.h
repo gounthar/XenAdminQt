@@ -156,7 +156,7 @@ class XENLIB_EXPORT VDI : public XenObject
         // Object resolution getters
         QSharedPointer<SR> GetSR() const;
         QList<QSharedPointer<VBD>> GetVBDs() const;
-        QString NameWithLocation() const override;
+        QString GetNameWithLocation() const override;
 
     protected:
         XenObjectType GetObjectType() const override { return XenObjectType::VDI; }

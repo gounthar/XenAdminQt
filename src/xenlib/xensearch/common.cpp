@@ -845,7 +845,7 @@ QVariant PropertyAccessors::VMProperty(XenObject* o)
     {
         if (vm->IsSnapshot())
         {
-            QString snapshotOf = vm->SnapshotOfRef();
+            QString snapshotOf = vm->GetSnapshotOfRef();
             if (!snapshotOf.isEmpty())
                 vmRefs.append(snapshotOf);
         }

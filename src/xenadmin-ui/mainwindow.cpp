@@ -793,7 +793,7 @@ void MainWindow::onTreeItemSelected()
     QString titleText = itemText;
     if (this->m_currentObject)
     {
-        const QString nameWithLocation = this->m_currentObject->NameWithLocation();
+        const QString nameWithLocation = this->m_currentObject->GetNameWithLocation();
         if (!nameWithLocation.isEmpty())
             titleText = nameWithLocation;
     }

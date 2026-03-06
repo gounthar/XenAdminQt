@@ -28,8 +28,8 @@
 #ifndef XENAPI_ROLE_H
 #define XENAPI_ROLE_H
 
-#include "../../xenlib_global.h"
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

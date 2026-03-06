@@ -32,6 +32,7 @@
 #include <QStringList>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -43,7 +44,7 @@ namespace XenAPI
      * Static-only class providing XenServer Network API calls.
      * Matches C# XenModel/XenAPI/Network.cs structure.
      */
-    class Network
+    class XENLIB_EXPORT Network
     {
         private:
             Network() = delete; // Static-only class

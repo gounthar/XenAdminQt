@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -42,7 +43,7 @@ namespace XenAPI
      * Static-only class providing XenServer Network_sriov API calls for SR-IOV configuration.
      * Matches C# XenModel/XenAPI/Network_sriov.cs structure.
      */
-    class Network_sriov
+    class XENLIB_EXPORT Network_sriov
     {
         private:
             Network_sriov() = delete; // Static-only class

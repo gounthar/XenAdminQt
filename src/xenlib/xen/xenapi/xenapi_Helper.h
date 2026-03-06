@@ -28,12 +28,12 @@
 #ifndef XENAPI_HELPER_H
 #define XENAPI_HELPER_H
 
-#include "../../xenlib_global.h"
 #include <QString>
 #include <QStringList>
 #include <QVariant>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {

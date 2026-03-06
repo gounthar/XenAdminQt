@@ -81,10 +81,10 @@ class XENLIB_EXPORT VIF : public XenObject
         qint64 GetMTU() const;
 
         //! Check if device is currently attached (erased on reboot, first published in XenServer 4.0)
-        bool CurrentlyAttached() const;
+        bool IsCurrentlyAttached() const;
 
         //! Get error/success code from last attach-operation (erased on reboot, first published in XenServer 4.0)
-        qint64 StatusCode() const;
+        qint64 GetStatusCode() const;
 
         //! Get error/success information from last attach-operation status (first published in XenServer 4.0)
         QString StatusDetail() const;

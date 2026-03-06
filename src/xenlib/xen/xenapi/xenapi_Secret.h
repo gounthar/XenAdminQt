@@ -29,6 +29,7 @@
 #define XENAPI_SECRET_H
 
 #include <QString>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -40,7 +41,7 @@ namespace XenAPI
      * Static-only class providing XenAPI Secret method bindings.
      * Secrets are used to store sensitive data like passwords.
      */
-    class Secret
+    class XENLIB_EXPORT Secret
     {
         private:
             Secret() = delete; // Static-only class

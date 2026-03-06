@@ -205,7 +205,7 @@ void NewVMWizard::loadTemplates()
         if (!vm->IsTemplate() || vm->IsSnapshot())
             continue;
 
-        if (!vm->Show(showHidden))
+        if (!vm->IsVisible(showHidden))
             continue;
 
         if (restrictVtpm)

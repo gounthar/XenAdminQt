@@ -56,7 +56,7 @@ class XENLIB_EXPORT Pool : public XenObject
         ~Pool() override = default;
 
         QString GetName() const override;
-        QString LocationString() const override;
+        QString GetLocationString() const override;
 
         //! Get reference to pool master host (Host opaque reference)
         QString GetMasterHostRef() const;

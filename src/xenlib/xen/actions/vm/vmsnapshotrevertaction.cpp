@@ -49,7 +49,7 @@ VMSnapshotRevertAction::VMSnapshotRevertAction(QSharedPointer<VM> snapshot, QObj
     SetTitle(QString("Revert to snapshot '%1'").arg(m_snapshot->GetName()));
 
     // Get parent VM reference
-    QString vmRef = m_snapshot->SnapshotOfRef();
+    QString vmRef = m_snapshot->GetSnapshotOfRef();
     if (!vmRef.isEmpty() && vmRef != XENOBJECT_NULL)
     {
         m_vm = m_snapshot->GetConnection()->GetCache()->ResolveObject<VM>(vmRef);

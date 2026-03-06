@@ -61,10 +61,10 @@ QString XenObject::GetName() const
     return this->stringProperty("name_label");
 }
 
-QString XenObject::NameWithLocation() const
+QString XenObject::GetNameWithLocation() const
 {
     const QString name = this->GetName();
-    const QString location = this->LocationString();
+    const QString location = this->GetLocationString();
 
     if (location.isEmpty())
         return name;
@@ -74,7 +74,7 @@ QString XenObject::NameWithLocation() const
     return QString("%1 %2").arg(name, location);
 }
 
-QString XenObject::LocationString() const
+QString XenObject::GetLocationString() const
 {
     if (!this->m_connection)
         return QString();

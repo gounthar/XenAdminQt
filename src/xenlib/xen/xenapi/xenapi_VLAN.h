@@ -31,6 +31,7 @@
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -44,7 +45,7 @@ namespace XenAPI
      *
      * First published in XenServer 4.1.
      */
-    class VLAN
+    class XENLIB_EXPORT VLAN
     {
         private:
             VLAN() = delete; // Static-only class

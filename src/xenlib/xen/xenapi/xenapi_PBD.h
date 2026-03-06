@@ -30,6 +30,7 @@
 
 #include <QString>
 #include <QVariantMap>
+#include "xenlib_global.h"
 
 namespace XenAPI
 {
@@ -41,7 +42,7 @@ namespace XenAPI
      * Static-only class providing XenAPI PBD method bindings.
      * PBDs represent the connection between a host and an SR.
      */
-    class PBD
+    class XENLIB_EXPORT PBD
     {
         private:
             PBD() = delete; // Static-only class
