@@ -68,8 +68,6 @@ class SnapshotsTabPage : public BaseTabPage
         void onDeleteSnapshot();
         void onRevertToSnapshot();
         void onSnapshotSelectionChanged();
-        void refreshSnapshotList();
-        void onVirtualMachinesDataUpdated(QVariantList vms);
         void onCacheObjectChanged(XenConnection *connection, const QString& type, const QString& ref);
         void onSnapshotContextMenu(const QPoint& pos);
         void onScheduledSnapshotsToggled();

@@ -28,7 +28,6 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QMessageBox>
-#include <QTimer>
 #include <QMenu>
 #include <QActionGroup>
 #include <QHeaderView>
@@ -53,7 +52,6 @@
 #include "xenlib/xencache.h"
 #include "xenlib/xen/actions/vm/vmsnapshotcreateaction.h"
 #include "xenlib/xen/xenapi/xenapi_Blob.h"
-#include "xenlib/xen/xenapi/xenapi_VM.h"
 #include "xenlib/xen/vbd.h"
 #include "xenlib/xen/vdi.h"
 #include "xenlib/xen/vm.h"
@@ -72,7 +70,6 @@ SnapshotsTabPage::SnapshotsTabPage(QWidget* parent) : BaseTabPage(parent), ui(ne
     connect(this->ui->takeSnapshotButton, &QPushButton::clicked, this, &SnapshotsTabPage::onTakeSnapshot);
     connect(this->ui->deleteSnapshotButton, &QPushButton::clicked, this, &SnapshotsTabPage::onDeleteSnapshot);
     connect(this->ui->revertButton, &QPushButton::clicked, this, &SnapshotsTabPage::onRevertToSnapshot);
-    connect(this->ui->refreshButton, &QPushButton::clicked, this, &SnapshotsTabPage::refreshSnapshotList);
     connect(this->ui->snapshotTree, &QListWidget::itemSelectionChanged, this, &SnapshotsTabPage::onSnapshotSelectionChanged);
     connect(this->ui->snapshotTable, &QTableWidget::itemSelectionChanged, this, &SnapshotsTabPage::onSnapshotSelectionChanged);
     connect(this->ui->propertiesButton, &QPushButton::clicked, this, [this]()
@@ -400,7 +397,6 @@ void SnapshotsTabPage::onDeleteSnapshot()
     {
         DeleteSnapshotCommand* cmd = new DeleteSnapshotCommand(snapshotRefs.first(), mainWindow);
         cmd->Run();
-        QTimer::singleShot(1000, this, &SnapshotsTabPage::refreshSnapshotList);
         return;
     }
 
@@ -476,9 +472,6 @@ void SnapshotsTabPage::onRevertToSnapshot()
 
     RevertToSnapshotCommand* cmd = new RevertToSnapshotCommand(snapshotRef, mainWindow);
     cmd->Run();
-
-    // Refresh after a short delay to allow the operation to complete
-    QTimer::singleShot(1000, this, &SnapshotsTabPage::refreshSnapshotList);
 }
 
 void SnapshotsTabPage::onSnapshotSelectionChanged()
@@ -486,58 +479,6 @@ void SnapshotsTabPage::onSnapshotSelectionChanged()
     updateButtonStates();
     updateDetailsPanel();
     updateSpinningIcon();
-}
-
-void SnapshotsTabPage::refreshSnapshotList()
-{
-    if (!this->m_object || !this->m_object->IsConnected())
-    {
-        return;
-    }
-
-    qDebug() << "SnapshotsTabPage: Manually refreshing snapshot list for VM:" << this->m_object->OpaqueRef();
-
-    XenAPI::Session* session = this->m_object->GetConnection()->GetSession();
-
-    try
-    {
-        // TODO this is sync call it freezes the UI
-        QVariantMap records = XenAPI::VM::get_all_records(session);
-        this->m_connection->GetCache()->UpdateBulk(XenObjectType::VM, records);
-    }
-    catch (const std::exception& ex)
-    {
-        qWarning() << "SnapshotsTabPage: Failed to refresh VM records:" << ex.what();
-    }
-}
-
-void SnapshotsTabPage::onVirtualMachinesDataUpdated(QVariantList vms)
-{
-    // Check if the updated VMs include our current VM
-    if (this->m_object.isNull() || this->m_object->GetObjectType() != XenObjectType::VM)
-    {
-        return;
-    }
-
-    // Find our VM in the updated list
-    for (const QVariant& vmVar : vms)
-    {
-        QVariantMap vm = vmVar.toMap();
-        QString vmRef = vm.value("ref").toString();
-
-        if (vmRef == this->m_object->OpaqueRef())
-        {
-            qDebug() << "SnapshotsTabPage: Auto-refreshing snapshots for VM:" << vmRef;
-
-            // Update our local object data
-            this->m_objectData = vm;
-
-            // Refresh the snapshot tree
-            this->populateSnapshotTree();
-            this->updateButtonStates();
-            break;
-        }
-    }
 }
 
 void SnapshotsTabPage::onCacheObjectChanged(XenConnection* connection, const QString& type, const QString& ref)
