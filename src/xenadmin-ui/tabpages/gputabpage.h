@@ -71,7 +71,7 @@ class GpuTabPage : public BaseTabPage
             return QStringLiteral("TabPageGPU");
         }
 
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
         void OnPageShown() override;
         void OnPageHidden() override;
 

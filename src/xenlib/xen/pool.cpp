@@ -460,6 +460,18 @@ QList<QSharedPointer<Host>> Pool::GetHosts() const
     return hosts;
 }
 
+bool Pool::HasEnabledHosts() const
+{
+    const QList<QSharedPointer<Host>> hosts = this->GetHosts();
+    for (const QSharedPointer<Host>& host : hosts)
+    {
+        if (host && host->IsValid() && host->IsEnabled())
+            return true;
+    }
+
+    return false;
+}
+
 QSharedPointer<Host> Pool::GetMasterHost() const
 {
     QString masterRef = this->GetMasterHostRef();

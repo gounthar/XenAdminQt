@@ -79,10 +79,10 @@ void MemoryTabPage::updateObject()
     connect(cache, &XenCache::cacheCleared, this, &MemoryTabPage::onCacheCleared, Qt::UniqueConnection);
 }
 
-bool MemoryTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool MemoryTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // Memory tab is applicable to VMs, Hosts, and Pools
-    return objectType == "vm" || objectType == "host" || objectType == "pool";
+    return objectType == XenObjectType::VM || objectType == XenObjectType::Host || objectType == XenObjectType::Pool;
 }
 
 QSharedPointer<VM> MemoryTabPage::GetVM()
@@ -416,12 +416,12 @@ void MemoryTabPage::populatePoolMemory()
 
 void MemoryTabPage::onCacheObjectChanged(XenConnection* connection, const QString& type, const QString& ref)
 {
-    if (this->m_connection != connection)
+    if (this->m_connection != connection || this->m_object.isNull())
         return;
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
-        if (type == "vm" && ref == this->m_objectRef)
+        if (type == "vm" && ref == this->m_object->OpaqueRef())
         {
             this->refreshContent();
             return;
@@ -433,9 +433,9 @@ void MemoryTabPage::onCacheObjectChanged(XenConnection* connection, const QStrin
             this->refreshContent();
             return;
         }
-    } else if (this->m_objectType == XenObjectType::Host)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
-        if (type == "host" && ref == this->m_objectRef)
+        if (type == "host" && ref == this->m_object->OpaqueRef())
         {
             this->refreshContent();
             return;
@@ -453,9 +453,9 @@ void MemoryTabPage::onCacheObjectChanged(XenConnection* connection, const QStrin
             this->refreshContent();
             return;
         }
-    } else if (this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Pool)
     {
-        if (type == "pool" && ref == this->m_objectRef)
+        if (type == "pool" && ref == this->m_object->OpaqueRef())
         {
             this->refreshContent();
             return;
@@ -473,18 +473,18 @@ void MemoryTabPage::onCacheObjectRemoved(XenConnection* connection, const QStrin
 {
     Q_UNUSED(ref);
 
-    if (this->m_connection != connection)
+    if (!this->m_object || this->m_connection != connection)
         return;
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         if (type == "vm_metrics" || type == "vm")
             this->refreshContent();
-    } else if (this->m_objectType == XenObjectType::Host)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
         if (type == "host" || type == "host_metrics" || type == "vm" || type == "vm_metrics")
             this->refreshContent();
-    } else if (this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Pool)
     {
         if (type == "pool" || type == "host" || type == "host_metrics" || type == "vm" || type == "vm_metrics")
             this->refreshContent();
@@ -495,15 +495,18 @@ void MemoryTabPage::onCacheBulkUpdateComplete(const QString& type, int count)
 {
     Q_UNUSED(count);
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         if (type == "vm" || type == "vm_metrics")
             this->refreshContent();
-    } else if (this->m_objectType == XenObjectType::Host)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
         if (type == "host" || type == "host_metrics" || type == "vm" || type == "vm_metrics")
             this->refreshContent();
-    } else if (this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Pool)
     {
         if (type == "pool" || type == "host" || type == "host_metrics" || type == "vm" || type == "vm_metrics")
             this->refreshContent();

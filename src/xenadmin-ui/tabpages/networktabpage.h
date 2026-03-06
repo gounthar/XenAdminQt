@@ -75,7 +75,7 @@ class NetworkTabPage : public BaseTabPage
         {
             return "TabPageNetwork";
         }
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
     protected:
         void refreshContent() override;

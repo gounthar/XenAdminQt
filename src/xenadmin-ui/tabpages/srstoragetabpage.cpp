@@ -94,9 +94,9 @@ SrStorageTabPage::~SrStorageTabPage()
     delete this->ui;
 }
 
-bool SrStorageTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool SrStorageTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
-    return objectType == "sr";
+    return objectType == XenObjectType::SR;
 }
 
 void SrStorageTabPage::SetObject(QSharedPointer<XenObject> object)
@@ -351,11 +351,11 @@ void SrStorageTabPage::updateButtonStates()
 
 void SrStorageTabPage::onRescanButtonClicked()
 {
-    if (!this->m_connection || this->m_objectRef.isEmpty())
+    if (!this->m_object || !this->m_object->IsConnected())
         return;
 
-    SrRefreshAction* action = new SrRefreshAction(this->m_connection, this->m_objectRef);
-    action->RunAsync();
+    SrRefreshAction* action = new SrRefreshAction(this->m_object->GetConnection(), this->m_object->OpaqueRef());
+    action->RunAsync(true);
 
     this->requestSrRefresh(2000);
 }
@@ -492,13 +492,13 @@ void SrStorageTabPage::onStorageTableCustomContextMenuRequested(const QPoint& po
 
 void SrStorageTabPage::requestSrRefresh(int delayMs)
 {
-    if (!this->m_connection || this->m_objectRef.isEmpty())
+    if (!this->m_object || !this->m_object->IsConnected())
         return;
 
     auto request = [this]()
     {
-        SrRefreshAction* action = new SrRefreshAction(this->m_connection, this->m_objectRef);
-        action->RunAsync();
+        SrRefreshAction* action = new SrRefreshAction(this->m_object->GetConnection(), this->m_object->OpaqueRef());
+        action->RunAsync(true);
     };
 
     if (delayMs <= 0)

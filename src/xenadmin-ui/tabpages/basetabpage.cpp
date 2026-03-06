@@ -44,8 +44,8 @@ void BaseTabPage::SetObject(QSharedPointer<XenObject> object)
     const bool sameObject = hadObject
                             && hasNewObject
                             && this->m_connection == object->GetConnection()
-                            && this->m_objectType == object->GetObjectType()
-                            && this->m_objectRef == object->OpaqueRef();
+                            && this->m_object->GetObjectType() == object->GetObjectType()
+                            && this->m_object->OpaqueRef() == object->OpaqueRef();
 
     if (!hasNewObject)
     {
@@ -54,8 +54,6 @@ void BaseTabPage::SetObject(QSharedPointer<XenObject> object)
 
         this->m_object.clear();
         this->m_objectData.clear();
-        this->m_objectRef.clear();
-        this->m_objectType = XenObjectType::Null;
         this->m_connection = nullptr;
         this->m_isDirty = false;
         return;
@@ -79,8 +77,6 @@ void BaseTabPage::SetObject(QSharedPointer<XenObject> object)
 
     this->m_object = object;
     this->m_objectData = object->GetData();
-    this->m_objectRef = object->OpaqueRef();
-    this->m_objectType = object->GetObjectType();
     this->m_connection = object->GetConnection();
     this->updateObject();
     this->refreshContent();

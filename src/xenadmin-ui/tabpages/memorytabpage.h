@@ -69,7 +69,7 @@ class MemoryTabPage : public BaseTabPage
         {
             return "TabPageBallooning";
         }
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
         QSharedPointer<VM> GetVM();
 
     protected:

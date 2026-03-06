@@ -86,7 +86,7 @@ class CvmConsoleTabPage : public BaseTabPage
          *
          * Reference: MainWindow.cs BuildTabList() line 1376
          */
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
         /**
          * @brief Called when page is shown in tab widget

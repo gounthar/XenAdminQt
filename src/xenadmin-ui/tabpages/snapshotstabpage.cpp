@@ -170,19 +170,18 @@ void SnapshotsTabPage::updateObject()
         return;
     XenCache* cache = this->m_vm->GetCache();
     connect(cache, &XenCache::objectChanged, this, &SnapshotsTabPage::onCacheObjectChanged, Qt::UniqueConnection);
-    if (!this->m_objectRef.isEmpty())
-        this->setViewMode(this->s_viewByVmRef.value(this->m_objectRef, SnapshotsView::TreeView));
+    this->setViewMode(this->s_viewByVmRef.value(this->m_vm->OpaqueRef(), SnapshotsView::TreeView));
 }
 
-bool SnapshotsTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool SnapshotsTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // Snapshots are only applicable to VMs
-    return objectType == "vm";
+    return objectType == XenObjectType::VM;
 }
 
 void SnapshotsTabPage::refreshContent()
 {
-    if (this->m_objectData.isEmpty() || this->m_objectType != XenObjectType::VM)
+    if (this->m_object.isNull() || this->m_object->GetObjectType() != XenObjectType::VM)
     {
         this->ui->snapshotTree->Clear();
         this->ui->snapshotTable->setRowCount(0);
@@ -190,8 +189,7 @@ void SnapshotsTabPage::refreshContent()
         return;
     }
 
-    if (!this->m_objectRef.isEmpty())
-        this->setViewMode(this->s_viewByVmRef.value(this->m_objectRef, SnapshotsView::TreeView));
+    this->setViewMode(this->s_viewByVmRef.value(this->m_object->OpaqueRef(), SnapshotsView::TreeView));
 
     this->refreshVmssPanel();
     this->populateSnapshotTree();
@@ -492,22 +490,18 @@ void SnapshotsTabPage::onSnapshotSelectionChanged()
 
 void SnapshotsTabPage::refreshSnapshotList()
 {
-    if (!this->m_connection || !this->m_connection->GetCache() || this->m_objectRef.isEmpty())
+    if (!this->m_object || !this->m_object->IsConnected())
     {
         return;
     }
 
-    qDebug() << "SnapshotsTabPage: Manually refreshing snapshot list for VM:" << this->m_objectRef;
+    qDebug() << "SnapshotsTabPage: Manually refreshing snapshot list for VM:" << this->m_object->OpaqueRef();
 
-    XenAPI::Session* session = this->m_connection->GetSession();
-    if (!session || !session->IsLoggedIn())
-    {
-        qWarning() << "SnapshotsTabPage: No active session for refresh";
-        return;
-    }
+    XenAPI::Session* session = this->m_object->GetConnection()->GetSession();
 
     try
     {
+        // TODO this is sync call it freezes the UI
         QVariantMap records = XenAPI::VM::get_all_records(session);
         this->m_connection->GetCache()->UpdateBulk(XenObjectType::VM, records);
     }
@@ -520,7 +514,7 @@ void SnapshotsTabPage::refreshSnapshotList()
 void SnapshotsTabPage::onVirtualMachinesDataUpdated(QVariantList vms)
 {
     // Check if the updated VMs include our current VM
-    if (this->m_objectRef.isEmpty() || this->m_objectType != XenObjectType::VM)
+    if (this->m_object.isNull() || this->m_object->GetObjectType() != XenObjectType::VM)
     {
         return;
     }
@@ -531,7 +525,7 @@ void SnapshotsTabPage::onVirtualMachinesDataUpdated(QVariantList vms)
         QVariantMap vm = vmVar.toMap();
         QString vmRef = vm.value("ref").toString();
 
-        if (vmRef == this->m_objectRef)
+        if (vmRef == this->m_object->OpaqueRef())
         {
             qDebug() << "SnapshotsTabPage: Auto-refreshing snapshots for VM:" << vmRef;
 
@@ -551,7 +545,10 @@ void SnapshotsTabPage::onCacheObjectChanged(XenConnection* connection, const QSt
     (void) connection;
     (void) ref;
 
-    if (this->m_objectType == XenObjectType::VM && (type == "vm" || type == "vdi" || type == "vbd"))
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() == XenObjectType::VM && (type == "vm" || type == "vdi" || type == "vbd"))
     {
         this->populateSnapshotTree();
         this->updateButtonStates();
@@ -559,7 +556,7 @@ void SnapshotsTabPage::onCacheObjectChanged(XenConnection* connection, const QSt
         this->updateSpinningIcon();
     }
 
-    if (this->m_objectType == XenObjectType::VM && (type == "vm" || type == "vmss"))
+    if (this->m_object->GetObjectType() == XenObjectType::VM && (type == "vm" || type == "vmss"))
         this->refreshVmssPanel();
 }
 
@@ -906,10 +903,10 @@ void SnapshotsTabPage::updateSpinningIcon()
 
 bool SnapshotsTabPage::isSpinningActionForCurrentVm(AsyncOperation* operation, QString* message) const
 {
-    if (!operation || this->m_objectRef.isEmpty() || this->m_objectType != XenObjectType::VM)
+    if (!operation || this->m_object.isNull() || this->m_object->GetObjectType() != XenObjectType::VM)
         return false;
 
-    if (auto* createAction = qobject_cast<VMSnapshotCreateAction*>(operation))
+    if (qobject_cast<VMSnapshotCreateAction*>(operation))
     {
         // VMSnapshotCreateAction takes VM directly, check snapshot result instead
         // Compare with parent VM after snapshot is created
@@ -918,7 +915,7 @@ bool SnapshotsTabPage::isSpinningActionForCurrentVm(AsyncOperation* operation, Q
         return true;
     }
 
-    if (auto* revertAction = qobject_cast<VMSnapshotRevertAction*>(operation))
+    if (qobject_cast<VMSnapshotRevertAction*>(operation))
     {
         // VMSnapshotRevertAction takes snapshot, need to check its parent VM
         // The action's snapshot should belong to current VM
@@ -1025,8 +1022,8 @@ void SnapshotsTabPage::setViewMode(SnapshotsView view)
             this->m_listViewAction->setChecked(true);
     }
 
-    if (!this->m_objectRef.isEmpty())
-        this->s_viewByVmRef[this->m_objectRef] = view;
+    if (!this->m_object.isNull())
+        this->s_viewByVmRef[this->m_object->OpaqueRef()] = view;
 
     this->updateButtonStates();
 }

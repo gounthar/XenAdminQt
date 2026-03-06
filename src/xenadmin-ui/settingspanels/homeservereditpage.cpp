@@ -57,10 +57,10 @@ QString HomeServerEditPage::GetText() const
 
 QString HomeServerEditPage::GetSubText() const
 {
-    if (!ui->picker->validState())
+    if (!ui->picker->IsValidState())
         return tr("None defined");
 
-    QString hostRef = ui->picker->selectedAffinityRef();
+    QString hostRef = ui->picker->GetSelectedAffinityRef();
     if (hostRef.isEmpty())
         return tr("None defined");
 
@@ -79,7 +79,7 @@ QIcon HomeServerEditPage::GetImage() const
 {
     if (connection())
     {
-        QString hostRef = ui->picker->selectedAffinityRef();
+        QString hostRef = ui->picker->GetSelectedAffinityRef();
         if (!hostRef.isEmpty())
         {
             QSharedPointer<Host> host = connection()->GetCache()->ResolveObject<Host>(hostRef);
@@ -106,8 +106,8 @@ void HomeServerEditPage::SetXenObject(QSharedPointer<XenObject> object, const QV
     // Get VM's current affinity
     m_originalAffinityRef = objectDataBefore.value("affinity").toString();
 
-    ui->picker->setAutoSelectAffinity(false);
-    ui->picker->setAffinity(connection(), m_originalAffinityRef, QString());
+    ui->picker->SetAutoSelectAffinity(false);
+    ui->picker->SetAffinity(connection(), m_originalAffinityRef, QString());
 }
 
 AsyncOperation* HomeServerEditPage::SaveSettings()
@@ -119,7 +119,7 @@ AsyncOperation* HomeServerEditPage::SaveSettings()
 
     // Determine new affinity
     QString newAffinityRef;
-    QString selectedRef = ui->picker->selectedAffinityRef();
+    QString selectedRef = ui->picker->GetSelectedAffinityRef();
     newAffinityRef = selectedRef.isEmpty() ? QString(XENOBJECT_NULL) : selectedRef;
 
     auto* op = new DelegatedAsyncOperation(
@@ -139,7 +139,7 @@ AsyncOperation* HomeServerEditPage::SaveSettings()
 
 bool HomeServerEditPage::IsValidToSave() const
 {
-    return ui->picker->validState();
+    return ui->picker->IsValidState();
 }
 
 void HomeServerEditPage::ShowLocalValidationMessages()
@@ -159,7 +159,7 @@ void HomeServerEditPage::Cleanup()
 
 bool HomeServerEditPage::HasChanged() const
 {
-    QString currentAffinityRef = ui->picker->selectedAffinityRef();
+    QString currentAffinityRef = ui->picker->GetSelectedAffinityRef();
     if (currentAffinityRef.isEmpty())
         currentAffinityRef = XENOBJECT_NULL;
 

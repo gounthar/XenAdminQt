@@ -74,10 +74,10 @@ NICsTabPage::~NICsTabPage()
     delete this->ui;
 }
 
-bool NICsTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool NICsTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // NICs tab is only applicable to Hosts
-    return objectType == "host";
+    return objectType == XenObjectType::Host;
 }
 
 void NICsTabPage::refreshContent()
@@ -86,7 +86,7 @@ void NICsTabPage::refreshContent()
     this->ui->nicsTable->setSortingEnabled(false);
     this->ui->nicsTable->setRowCount(0);
 
-    if (this->m_objectData.isEmpty() || this->m_objectType != XenObjectType::Host)
+    if (!this->m_object || this->m_object->GetObjectType() != XenObjectType::Host)
     {
         TableClipboardUtils::RestoreSortState(this->ui->nicsTable, sortState, 0, Qt::AscendingOrder);
         return;
@@ -306,14 +306,12 @@ void NICsTabPage::onSelectionChanged()
 
 void NICsTabPage::onCreateBondClicked()
 {
-    if (!this->m_connection || !this->m_connection->GetCache() || this->m_objectType != XenObjectType::Host)
-    {
+    if (!this->m_object || this->m_object->GetObjectType() != XenObjectType::Host)
         return;
-    }
 
     // Get the network ref - use the first available network or create a bond network
     QString networkRef;
-    QList<QSharedPointer<Network>> networks = this->m_connection->GetCache()->GetAll<Network>();
+    QList<QSharedPointer<Network>> networks = this->m_object->GetCache()->GetAll<Network>();
     if (!networks.isEmpty())
     {
         // Use the first network (typically the management network)
@@ -326,9 +324,8 @@ void NICsTabPage::onCreateBondClicked()
     }
 
     // Open bond creation dialog
-    XenCache* cache = this->m_connection->GetCache();
-    QSharedPointer<Host> host = cache->ResolveObject<Host>(XenObjectType::Host, this->m_objectRef);
-    QSharedPointer<Network> network = cache->ResolveObject<Network>(XenObjectType::Network, networkRef);
+    QSharedPointer<Host> host = qSharedPointerDynamicCast<Host>(this->m_object);
+    QSharedPointer<Network> network = host->GetCache()->ResolveObject<Network>(XenObjectType::Network, networkRef);
     BondPropertiesDialog dialog(host, network, this);
     if (dialog.exec() == QDialog::Accepted)
     {
@@ -340,13 +337,6 @@ void NICsTabPage::onCreateBondClicked()
         if (pifRefs.size() < 2)
         {
             QMessageBox::warning(this, "Create Bond", "At least 2 network interfaces are required to create a bond.");
-            return;
-        }
-
-        XenConnection* connection = this->m_connection;
-        if (!connection)
-        {
-            QMessageBox::critical(this, "Error", "No active connection.");
             return;
         }
 
@@ -362,16 +352,7 @@ void NICsTabPage::onCreateBondClicked()
         const bool autoPlug = dialog.getAutoPlug();
         const QString hashingAlgorithm = dialog.getHashingAlgorithm();
 
-        CreateBondAction* action = new CreateBondAction(
-            connection,
-            bondName,
-            pifRefs,
-            autoPlug,
-            mtu,
-            bondMode,
-            hashingAlgorithm,
-            this);
-
+        CreateBondAction* action = new CreateBondAction(this->m_object->GetConnection(), bondName, pifRefs, autoPlug, mtu, bondMode, hashingAlgorithm);
 
         connect(action, &AsyncOperation::completed, this, [this, bondMode, action]()
         {

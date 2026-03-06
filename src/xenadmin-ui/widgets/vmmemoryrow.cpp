@@ -32,11 +32,11 @@
 
 VMMemoryRow::VMMemoryRow(const QList<QSharedPointer<VM>>& vms, bool expanded, QWidget* parent)
     : QWidget(parent)
-    , vms_(vms)
-    , expanded_(expanded)
-    , panelLabel_(nullptr)
-    , panelControls_(nullptr)
-    , vmMemoryControls_(nullptr)
+    , m_vms(vms)
+    , m_expanded(expanded)
+    , m_panelLabel(nullptr)
+    , m_panelControls(nullptr)
+    , m_vmMemoryControls(nullptr)
 {
     this->SetupUi();
 }
@@ -53,23 +53,23 @@ void VMMemoryRow::SetupUi()
     mainLayout->setSpacing(0);
     
     // Create label panel (top section with VM name)
-    this->panelLabel_ = new QFrame(this);
-    this->panelLabel_->setFrameShape(QFrame::StyledPanel);
-    this->panelLabel_->setFrameShadow(QFrame::Raised);
-    this->panelLabel_->setLineWidth(1);
-    this->panelLabel_->setStyleSheet("background-color: silver;");
+    this->m_panelLabel = new QFrame(this);
+    this->m_panelLabel->setFrameShape(QFrame::StyledPanel);
+    this->m_panelLabel->setFrameShadow(QFrame::Raised);
+    this->m_panelLabel->setLineWidth(1);
+    this->m_panelLabel->setStyleSheet("background-color: silver;");
     
-    QHBoxLayout* labelLayout = new QHBoxLayout(this->panelLabel_);
+    QHBoxLayout* labelLayout = new QHBoxLayout(this->m_panelLabel);
     labelLayout->setContentsMargins(10, 5, 10, 5);
     labelLayout->setSpacing(10);
     
     // VM label (show first VM name or count if multiple)
-    QLabel* vmLabel = new QLabel(this->panelLabel_);
-    if (!this->vms_.isEmpty())
+    QLabel* vmLabel = new QLabel(this->m_panelLabel);
+    if (!this->m_vms.isEmpty())
     {
-        if (this->vms_.size() == 1)
+        if (this->m_vms.size() == 1)
         {
-            QSharedPointer<VM> vm = this->vms_.first();
+            QSharedPointer<VM> vm = this->m_vms.first();
             if (vm && !vm->IsEvicted())
             {
                 vmLabel->setText(vm->GetName());
@@ -77,37 +77,37 @@ void VMMemoryRow::SetupUi()
         }
         else
         {
-            vmLabel->setText(tr("%1 VMs").arg(this->vms_.size()));
+            vmLabel->setText(tr("%1 VMs").arg(this->m_vms.size()));
         }
     }
     vmLabel->setStyleSheet("font-weight: bold;");
     labelLayout->addWidget(vmLabel);
     labelLayout->addStretch();
     
-    mainLayout->addWidget(this->panelLabel_);
+    mainLayout->addWidget(this->m_panelLabel);
     
     // Create controls panel (bottom section with memory info)
-    this->panelControls_ = new QFrame(this);
-    this->panelControls_->setFrameShape(QFrame::StyledPanel);
-    this->panelControls_->setFrameShadow(QFrame::Raised);
-    this->panelControls_->setLineWidth(1);
+    this->m_panelControls = new QFrame(this);
+    this->m_panelControls->setFrameShape(QFrame::StyledPanel);
+    this->m_panelControls->setFrameShadow(QFrame::Raised);
+    this->m_panelControls->setLineWidth(1);
     
-    QHBoxLayout* controlsLayout = new QHBoxLayout(this->panelControls_);
+    QHBoxLayout* controlsLayout = new QHBoxLayout(this->m_panelControls);
     controlsLayout->setContentsMargins(10, 10, 10, 10);
     controlsLayout->setSpacing(10);
     
     // Memory controls (right side)
-    this->vmMemoryControls_ = new VMMemoryControls(this->panelControls_);
-    this->vmMemoryControls_->SetVMs(this->vms_);
-    controlsLayout->addWidget(this->vmMemoryControls_);
+    this->m_vmMemoryControls = new VMMemoryControls(this->m_panelControls);
+    this->m_vmMemoryControls->SetVMs(this->m_vms);
+    controlsLayout->addWidget(this->m_vmMemoryControls);
     
-    mainLayout->addWidget(this->panelControls_);
+    mainLayout->addWidget(this->m_panelControls);
 }
 
 void VMMemoryRow::UnregisterHandlers()
 {
-    if (this->vmMemoryControls_)
+    if (this->m_vmMemoryControls)
     {
-        this->vmMemoryControls_->UnregisterHandlers();
+        this->m_vmMemoryControls->UnregisterHandlers();
     }
 }

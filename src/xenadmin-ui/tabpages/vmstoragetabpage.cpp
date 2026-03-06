@@ -132,10 +132,10 @@ VMStorageTabPage::~VMStorageTabPage()
     delete this->ui;
 }
 
-bool VMStorageTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool VMStorageTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // VM storage tab is only applicable to VMs (matches C# VMStoragePage)
-    return objectType == "vm";
+    return objectType == XenObjectType::VM;
 }
 
 void VMStorageTabPage::SetObject(QSharedPointer<XenObject> object)
@@ -477,18 +477,21 @@ void VMStorageTabPage::updateCDDVDVisibility()
 
 void VMStorageTabPage::refreshISOList()
 {
+    if (!this->m_object || !this->m_object->IsConnected())
+        return;
+
     QSignalBlocker blocker(this->ui->isoComboBox);
     this->ui->isoComboBox->clear();
 
-    if (this->m_currentVBDRef.isEmpty() || !this->m_connection || !this->m_connection->GetCache())
+    if (this->m_currentVBDRef.isEmpty())
         return;
 
     IsoDropDownBox* isoBox = qobject_cast<IsoDropDownBox*>(this->ui->isoComboBox);
     if (!isoBox)
         return;
 
-    isoBox->SetConnection(this->m_connection);
-    isoBox->SetVMRef(this->m_objectRef);
+    isoBox->SetConnection(this->m_object->GetConnection());
+    isoBox->SetVMRef(this->m_object->OpaqueRef());
     isoBox->Refresh();
 
     QSharedPointer<VBD> vbd = this->m_connection->GetCache()->ResolveObject<VBD>(this->m_currentVBDRef);
@@ -544,14 +547,6 @@ void VMStorageTabPage::onIsoComboBoxChanged(int index)
     bool empty = vbd->Empty();
 
     if ((vdiRef.isEmpty() && empty) || (!vdiRef.isEmpty() && vdiRef == currentVdiRef && !empty))
-    {
-        return;
-    }
-
-    // Get connection
-    XenConnection* conn = this->m_connection;
-
-    if (!conn)
         return;
 
     // Disable UI during operation
@@ -559,7 +554,7 @@ void VMStorageTabPage::onIsoComboBoxChanged(int index)
     this->ui->ejectButton->setEnabled(false);
 
     // Get VM object from cache
-    QSharedPointer<VM> vm = conn->GetCache()->ResolveObject<VM>(XenObjectType::VM, this->m_objectRef);
+    QSharedPointer<VM> vm = qSharedPointerDynamicCast<VM>(this->m_object);
     if (!vm || !vm->IsValid())
     {
         this->ui->isoComboBox->setEnabled(true);
@@ -568,15 +563,11 @@ void VMStorageTabPage::onIsoComboBoxChanged(int index)
     }
 
     // Create and run the AsyncOperation
-    ChangeVMISOAction* action = new ChangeVMISOAction(
-        vm,                    // VM object
-        vdiRef,                // VDI ref (empty for eject)
-        this->m_currentVBDRef, // VBD ref
-        this);
-
+    ChangeVMISOAction* action = new ChangeVMISOAction(vm, vdiRef, this->m_currentVBDRef);
 
     // Connect to completion signals
-    connect(action, &AsyncOperation::completed, this, [this, action]() {
+    connect(action, &AsyncOperation::completed, this, [this, action]()
+    {
         // Re-enable UI
         this->ui->isoComboBox->setEnabled(true);
         this->ui->ejectButton->setEnabled(true);
@@ -618,10 +609,10 @@ void VMStorageTabPage::onNewCDDriveLinkClicked(const QString& link)
 {
     Q_UNUSED(link);
 
-    if (!this->m_connection || !this->m_connection->GetCache() || this->m_objectRef.isEmpty())
+    if (!this->m_object || !this->m_object->IsConnected())
         return;
 
-    qDebug() << "Creating new CD/DVD drive for VM:" << this->m_objectRef;
+    qDebug() << "Creating new CD/DVD drive for VM:" << this->m_object->OpaqueRef();
 
     // Disable the link during operation
     this->ui->noDrivesLabel->setEnabled(false);
@@ -646,18 +637,13 @@ void VMStorageTabPage::onNewCDDriveLinkClicked(const QString& link)
     QString nextDevice = QString::number(maxDeviceNum + 1);
 
     // Create the new CD/DVD drive using VbdCreateAndPlugAction
-    XenConnection* connection = this->m_connection;
-    if (!connection)
-    {
-        QMessageBox::warning(this, tr("Error"), tr("No active connection."));
+    QSharedPointer<VM> vm = qSharedPointerDynamicCast<VM>(this->m_object);
+    if (!vm)
         return;
-    }
-
-    QSharedPointer<VM> vm(new VM(connection, m_objectRef));
 
     // Build VBD record for CD/DVD drive (empty VDI)
     QVariantMap vbdRecord;
-    vbdRecord["VM"] = m_objectRef;
+    vbdRecord["VM"] = vm->OpaqueRef();
     vbdRecord["VDI"] = XENOBJECT_NULL; // Empty for CD/DVD
     vbdRecord["userdevice"] = nextDevice;
     vbdRecord["bootable"] = false;
@@ -1385,7 +1371,7 @@ void VMStorageTabPage::onAddButtonClicked()
 
 void VMStorageTabPage::onAttachButtonClicked()
 {
-    if (!this->m_connection || !this->m_vm)
+    if (!this->m_vm || !this->m_vm->IsConnected())
         return;
 
     // Open Attach Virtual Disk Dialog
@@ -1406,18 +1392,11 @@ void VMStorageTabPage::onAttachButtonClicked()
     }
 
     // Attach VDI to VM using VbdCreateAndPlugAction
-    qDebug() << "Attaching VDI:" << vdiRef << "to VM:" << this->m_objectRef;
-
-    XenConnection* connection = this->m_connection;
-    if (!connection)
-    {
-        QMessageBox::warning(this, tr("Error"), tr("No active connection."));
-        return;
-    }
+    qDebug() << "Attaching VDI:" << vdiRef << "to VM:" << this->m_vm->OpaqueRef();
 
     // Build VBD record
     QVariantMap vbdRecord;
-    vbdRecord["VM"] = m_objectRef;
+    vbdRecord["VM"] = this->m_vm->OpaqueRef();
     vbdRecord["VDI"] = vdiRef;
     vbdRecord["userdevice"] = devicePosition;
     vbdRecord["bootable"] = bootable;

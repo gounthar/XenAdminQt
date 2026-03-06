@@ -58,7 +58,7 @@ class SnapshotsTabPage : public BaseTabPage
         {
             return Type::Snapshots;
         }
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
     protected:
         void refreshContent() override;

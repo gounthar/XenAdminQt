@@ -82,13 +82,13 @@ PhysicalStorageTabPage::~PhysicalStorageTabPage()
     delete this->ui;
 }
 
-bool PhysicalStorageTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool PhysicalStorageTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // Physical Storage tab is applicable to Hosts and Pools
     // C# Reference: xenadmin/XenAdmin/MainWindow.cs line 1337
     //   if (!multi && !SearchMode && ((isHostSelected && isHostLive) || isPoolSelected))
     //       newTabs.Add(TabPagePhysicalStorage);
-    return objectType == "host" || objectType == "pool";
+    return objectType == XenObjectType::Host || objectType == XenObjectType::Pool;
 }
 
 void PhysicalStorageTabPage::refreshContent()
@@ -99,17 +99,17 @@ void PhysicalStorageTabPage::refreshContent()
     // Clear table
     this->ui->storageTable->setRowCount(0);
 
-    if (!this->m_connection || this->m_objectRef.isEmpty())
+    if (!this->m_object)
     {
         TableClipboardUtils::RestoreSortState(this->ui->storageTable, sortState, 1, Qt::AscendingOrder);
         this->updateButtonStates();
         return;
     }
 
-    if (this->m_objectType == XenObjectType::Host)
+    if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
         this->populateHostStorage();
-    } else if (this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Pool)
     {
         this->populatePoolStorage();
     }
@@ -126,12 +126,10 @@ void PhysicalStorageTabPage::populateHostStorage()
     // Shows storage repositories attached to this host
     this->ui->titleLabel->setText("Storage Repositories");
 
-    if (!this->m_connection || this->m_objectRef.isEmpty())
-    {
+    if (!this->m_object)
         return;
-    }
 
-    QSharedPointer<Host> host = this->m_connection->GetCache()->ResolveObject<Host>(XenObjectType::Host, this->m_objectRef);
+    QSharedPointer<Host> host = qSharedPointerDynamicCast<Host>(this->m_object);
     if (!host || !host->IsValid())
         return;
 
@@ -255,14 +253,12 @@ void PhysicalStorageTabPage::populatePoolStorage()
     // Shows all storage repositories in the pool (when host == null, shows all PBDs in pool)
     this->ui->titleLabel->setText("Storage Repositories");
 
-    if (!this->m_connection || this->m_objectRef.isEmpty())
-    {
+    if (!this->m_object)
         return;
-    }
 
     // For pools, show all SRs in the pool
     // C#: List<PBD> pbds = host != null ? connection.ResolveAll(host.PBDs) : connection.Cache.PBDs (line 230)
-    QList<QSharedPointer<SR>> allSRs = this->m_connection->GetCache()->GetAll<SR>();
+    QList<QSharedPointer<SR>> allSRs = this->m_object->GetCache()->GetAll<SR>();
 
     QList<QString> srRefsList;
 

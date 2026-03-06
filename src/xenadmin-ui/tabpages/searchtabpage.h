@@ -52,7 +52,7 @@ class SearchTabPage : public BaseTabPage
         explicit SearchTabPage(QWidget* parent = nullptr);
         ~SearchTabPage() override;
 
-        bool IsApplicableForObjectType(const QString& type) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
         void SetObject(QSharedPointer<XenObject> object) override;
         QString GetTitle() const override
         {

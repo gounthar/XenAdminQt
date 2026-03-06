@@ -225,9 +225,9 @@ PerformanceTabPage::~PerformanceTabPage()
     delete this->ui;
 }
 
-bool PerformanceTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool PerformanceTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
-    return objectType == QStringLiteral("vm") || objectType == QStringLiteral("host");
+    return objectType == XenObjectType::VM || objectType == XenObjectType::Host;
 }
 
 void PerformanceTabPage::OnPageShown()
@@ -287,8 +287,8 @@ void PerformanceTabPage::refreshContent()
     if (!this->m_object)
         return;
 
-    const bool graphLayoutReloadNeeded = (this->m_loadedGraphsObjectRef != this->m_objectRef)
-                                         || (this->m_loadedGraphsObjectType != this->m_objectType);
+    const bool graphLayoutReloadNeeded = (this->m_loadedGraphsObjectRef != this->m_object->OpaqueRef())
+                                         || (this->m_loadedGraphsObjectType != this->m_object->GetObjectType());
 
     if (graphLayoutReloadNeeded)
     {
@@ -306,8 +306,8 @@ void PerformanceTabPage::refreshContent()
         }
 
         this->m_graphList->LoadGraphs(this->m_object.data());
-        this->m_loadedGraphsObjectRef = this->m_objectRef;
-        this->m_loadedGraphsObjectType = this->m_objectType;
+        this->m_loadedGraphsObjectRef = this->m_object->OpaqueRef();
+        this->m_loadedGraphsObjectType = this->m_object->GetObjectType();
     } else
     {
         // Same object update: keep maintainer/signals alive and refresh plots in-place.
@@ -411,7 +411,7 @@ void PerformanceTabPage::loadDataSources()
         this->m_getDataSourcesAction = nullptr;
     }
 
-    auto* action = new GetDataSourcesAction(this->m_connection, this->m_objectType, this->m_objectRef, this);
+    auto* action = new GetDataSourcesAction(this->m_connection, this->m_object->GetObjectType(), this->m_object->OpaqueRef(), this);
     this->m_getDataSourcesAction = action;
 
     connect(action, &GetDataSourcesAction::completed, this, [this, action, loadToken]()
@@ -626,11 +626,12 @@ bool PerformanceTabPage::showGraphDetailsDialog(DesignedGraph& graph, bool editM
             return;
 
         auto* action = new EnableDataSourceAction(this->m_connection,
-                                                  this->m_objectType,
-                                                  this->m_objectRef,
+                                                  this->m_object->GetObjectType(),
+                                                  this->m_object->OpaqueRef(),
                                                   source.DataSource.NameLabel,
-                                                  source.FriendlyName.isEmpty() ? source.GetDataSource() : source.FriendlyName,
-                                                  &dialog);
+                                                  source.FriendlyName.isEmpty() ? source.GetDataSource() : source.FriendlyName);
+
+        // TODO this is probably freezing the UI
         action->RunSync(this->m_connection->GetSession());
         const QList<QVariantMap> reloaded = action->DataSources();
         action->deleteLater();
@@ -709,17 +710,20 @@ void PerformanceTabPage::checkMessageForGraphs(const QVariantMap& messageData, b
     if (messageVmUuid.isEmpty())
         return;
 
+    if (!this->m_object)
+        return;
+
     bool applies = false;
     QString vmName;
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         applies = (this->m_object->GetUUID() == messageVmUuid);
         if (applies && this->m_object)
             vmName = this->m_object->GetName();
-    } else if (this->m_objectType == XenObjectType::Host)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
-        QSharedPointer<Host> host = this->m_connection->GetCache()->ResolveObject<Host>(this->m_objectRef);
+        QSharedPointer<Host> host = qSharedPointerDynamicCast<Host>(this->m_object);
         if (host)
         {
             const QList<QSharedPointer<VM>> resident = host->GetResidentVMs();

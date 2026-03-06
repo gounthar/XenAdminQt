@@ -138,15 +138,12 @@ void CDChanger::ChangeCD(const QString& vdiRef)
 
     QString vbdRef = this->cdrom_->OpaqueRef();
     
-    ChangeVMISOAction* action = new ChangeVMISOAction(
-        this->vm_,
-        vdiRef,
-        vbdRef,
-        this
-    );
+    ChangeVMISOAction* action = new ChangeVMISOAction(this->vm_, vdiRef, vbdRef);
     
-    connect(action, &AsyncOperation::completed, this, [this, action]() {
-        QTimer::singleShot(0, this, [this]() {
+    connect(action, &AsyncOperation::completed, this, [this, action]()
+    {
+        QTimer::singleShot(0, this, [this]()
+        {
             this->changing_ = false;
             this->updateSelectedCd();
             this->setEnabled(true);
@@ -154,9 +151,11 @@ void CDChanger::ChangeCD(const QString& vdiRef)
         action->deleteLater();
     });
     
-    connect(action, &AsyncOperation::failed, this, [this, action](const QString& error) {
+    connect(action, &AsyncOperation::failed, this, [this, action](const QString& error)
+    {
         qWarning() << "CDChanger: Failed to change CD:" << error;
-        QTimer::singleShot(0, this, [this]() {
+        QTimer::singleShot(0, this, [this]()
+        {
             this->changing_ = false;
             this->updateSelectedCd();
             this->setEnabled(true);

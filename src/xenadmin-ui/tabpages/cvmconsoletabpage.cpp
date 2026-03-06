@@ -67,11 +67,11 @@ CvmConsoleTabPage::~CvmConsoleTabPage()
  * if (consoleFeatures.Count == 0 && !multi && !SearchMode && isSRSelected && selectedSr.HasDriverDomain(out _))
  *     newTabs.Add(TabPageCvmConsole);
  */
-bool CvmConsoleTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool CvmConsoleTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // CVM Console tab is only shown for storage repositories (SR)
     // MainWindow will check if SR has driver domain before showing this tab
-    return objectType == "sr";
+    return objectType == XenObjectType::SR;
 }
 
 /**

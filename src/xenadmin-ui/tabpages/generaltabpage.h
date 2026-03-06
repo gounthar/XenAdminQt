@@ -66,16 +66,16 @@ class GeneralTabPage : public BaseTabPage
         {
             return "TabPageGeneral";
         }
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
     protected:
         void refreshContent() override;
 
     private:
         Ui::GeneralTabPage* ui;
-        QList<PDSection*> sections_;
-        QHash<QString, QList<PDSection*>> expandedSections_;
-        QAction* propertiesAction_;
+        QList<PDSection*> m_sections;
+        QHash<QString, QList<PDSection*>> m_expandedSections;
+        QAction* m_propertiesAction;
 
         void clearProperties();
         void addProperty(PDSection* section, const QString& label, const QString& value, const QList<QAction*>& contextMenuItems = QList<QAction*>());

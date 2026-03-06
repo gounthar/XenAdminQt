@@ -66,9 +66,9 @@ SearchTabPage::~SearchTabPage()
     this->m_search = nullptr;
 }
 
-bool SearchTabPage::IsApplicableForObjectType(const QString& type) const
+bool SearchTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
-    Q_UNUSED(type);
+    Q_UNUSED(objectType);
     return true;
 }
 

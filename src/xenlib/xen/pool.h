@@ -151,6 +151,9 @@ class XENLIB_EXPORT Pool : public XenObject
         //! Get all host objects in this pool (List of Host shared pointers)
         QList<QSharedPointer<Host>> GetHosts() const;
 
+        //! Check if pool has at least one enabled host
+        bool HasEnabledHosts() const;
+
         //! Get master host object (Shared pointer to pool master/coordinator host)
         QSharedPointer<Host> GetMasterHost() const;
 

@@ -48,6 +48,7 @@ class NewVMFromTemplateCommand : public TemplateCommand
         QIcon GetIcon() const override;
 
     private:
+        bool canRunTemplate(const QSharedPointer<VM>& templateVm) const override;
         bool poolHasEnabledHosts() const;
 };
 

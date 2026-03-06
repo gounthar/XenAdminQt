@@ -72,17 +72,17 @@ class VMMemoryControls : public QWidget
         void onVMMetricsChanged();
 
     private:
-        QList<QSharedPointer<VM>> vms_;
+        QList<QSharedPointer<VM>> m_vms;
         
         // UI elements
-        VMShinyBar* vmShinyBar_ = nullptr;
-        QLabel* labelDynMin_ = nullptr;
-        QLabel* labelDynMax_ = nullptr;
-        QLabel* labelStatMax_ = nullptr;
+        VMShinyBar* m_vmShinyBar = nullptr;
+        QLabel* m_labelDynMin = nullptr;
+        QLabel* m_labelDynMax = nullptr;
+        QLabel* m_labelStatMax = nullptr;
         
-        QLabel* valueDynMin_ = nullptr;
-        QLabel* valueDynMax_ = nullptr;
-        QLabel* valueStatMax_ = nullptr;
+        QLabel* m_valueDynMin = nullptr;
+        QLabel* m_valueDynMax = nullptr;
+        QLabel* m_valueStatMax = nullptr;
         
         void SetupUi();
 };

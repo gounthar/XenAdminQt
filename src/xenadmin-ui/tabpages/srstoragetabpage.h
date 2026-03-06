@@ -63,7 +63,7 @@ class SrStorageTabPage : public BaseTabPage
             return "TabPageStorage";
         }
 
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
         void SetObject(QSharedPointer<XenObject> object) override;
         QSharedPointer<SR> GetSR();
 

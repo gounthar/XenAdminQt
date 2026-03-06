@@ -45,12 +45,8 @@ class NotificationsSubModeItemDelegate : public QStyledItemDelegate
 
     public:
         explicit NotificationsSubModeItemDelegate(QObject* parent = nullptr);
-
-        void paint(QPainter* painter, const QStyleOptionViewItem& option,
-                   const QModelIndex& index) const override;
-
-        QSize sizeHint(const QStyleOptionViewItem& option,
-                       const QModelIndex& index) const override;
+        void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+        QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
     private:
         static constexpr int IMG_LEFT_MARGIN = 5;

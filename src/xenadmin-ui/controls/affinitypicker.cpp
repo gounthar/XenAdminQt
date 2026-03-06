@@ -66,7 +66,7 @@ AffinityPicker::~AffinityPicker()
     delete this->ui;
 }
 
-void AffinityPicker::setAffinity(XenConnection* connection, const QString& affinityRef, const QString& srHostRef)
+void AffinityPicker::SetAffinity(XenConnection* connection, const QString& affinityRef, const QString& srHostRef)
 {
     this->m_connection = connection;
     this->m_affinityRef = affinityRef;
@@ -91,7 +91,7 @@ void AffinityPicker::setAffinity(XenConnection* connection, const QString& affin
     emit this->selectedAffinityChanged();
 }
 
-QString AffinityPicker::selectedAffinityRef() const
+QString AffinityPicker::GetSelectedAffinityRef() const
 {
     if (this->ui->dynamicRadioButton->isChecked())
         return QString();
@@ -104,17 +104,17 @@ QString AffinityPicker::selectedAffinityRef() const
     return item ? item->data(Qt::UserRole).toString() : QString();
 }
 
-bool AffinityPicker::validState() const
+bool AffinityPicker::IsValidState() const
 {
-    return this->ui->dynamicRadioButton->isChecked() || !this->selectedAffinityRef().isEmpty();
+    return this->ui->dynamicRadioButton->isChecked() || !this->GetSelectedAffinityRef().isEmpty();
 }
 
-void AffinityPicker::setAutoSelectAffinity(bool enabled)
+void AffinityPicker::SetAutoSelectAffinity(bool enabled)
 {
     this->m_autoSelectAffinity = enabled;
 }
 
-bool AffinityPicker::autoSelectAffinity() const
+bool AffinityPicker::GetAutoSelectAffinity() const
 {
     return this->m_autoSelectAffinity;
 }
@@ -132,7 +132,7 @@ void AffinityPicker::showEvent(QShowEvent* event)
 
 void AffinityPicker::onStaticRadioToggled(bool checked)
 {
-    if (checked && this->selectedAffinityRef().isEmpty())
+    if (checked && this->GetSelectedAffinityRef().isEmpty())
         this->selectSomething();
 
     this->updateControl();

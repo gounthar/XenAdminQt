@@ -71,7 +71,7 @@ class ConsoleTabPage : public BaseTabPage
         {
             return "TabPageConsole";
         }
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
         /**
          * @brief Set the ConsolePanel instance (called by MainWindow)

@@ -81,10 +81,10 @@ GeneralTabPage::GeneralTabPage(QWidget* parent) : BaseTabPage(parent), ui(new Ui
     this->ui->expandAllButton->setCursor(Qt::PointingHandCursor);
     this->ui->collapseAllButton->setCursor(Qt::PointingHandCursor);
 
-    this->propertiesAction_ = new QAction(tr("Properties"), this);
-    this->connect(this->propertiesAction_, &QAction::triggered, this, &GeneralTabPage::openPropertiesDialog);
+    this->m_propertiesAction = new QAction(tr("Properties"), this);
+    this->connect(this->m_propertiesAction, &QAction::triggered, this, &GeneralTabPage::openPropertiesDialog);
 
-    this->sections_ = {
+    this->m_sections = {
         this->ui->pdSectionGeneral,
         this->ui->pdSectionCertificate,
         this->ui->pdSectionBios,
@@ -104,7 +104,7 @@ GeneralTabPage::GeneralTabPage(QWidget* parent) : BaseTabPage(parent), ui(new Ui
         this->ui->pdSectionDeviceSecurity
     };
 
-    for (PDSection* section : this->sections_)
+    for (PDSection* section : this->m_sections)
     {
         section->Expand();
         connect(section, &PDSection::ExpandedChanged, this, &GeneralTabPage::onSectionExpandedChanged);
@@ -119,7 +119,7 @@ GeneralTabPage::~GeneralTabPage()
     delete this->ui;
 }
 
-bool GeneralTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool GeneralTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // General tab is applicable to all object types
     Q_UNUSED(objectType);
@@ -140,7 +140,7 @@ void GeneralTabPage::refreshContent()
     XenObjectType object_type = this->m_object->GetObjectType();
 
     QList<QAction*> propertiesMenu;
-    propertiesMenu.append(this->propertiesAction_);
+    propertiesMenu.append(this->m_propertiesAction);
 
     const QString objectName = this->m_object->GetName().isEmpty() ? "N/A" : this->m_object->GetName();
     const QString objectDescription = this->m_object->GetDescription().isEmpty() ? "N/A" : this->m_object->GetDescription();
@@ -429,7 +429,7 @@ void GeneralTabPage::updateExpandCollapseButtons()
     bool canExpand = false;
     bool canCollapse = false;
 
-    for (PDSection* section : this->sections_)
+    for (PDSection* section : this->m_sections)
     {
         if (!section || section->IsEmpty())
             continue;
@@ -446,7 +446,7 @@ void GeneralTabPage::updateExpandCollapseButtons()
 
 void GeneralTabPage::toggleExpandedState(bool expandAll)
 {
-    for (PDSection* section : this->sections_)
+    for (PDSection* section : this->m_sections)
     {
         if (!section || !section->isVisible())
             continue;
@@ -462,16 +462,19 @@ void GeneralTabPage::toggleExpandedState(bool expandAll)
 
 void GeneralTabPage::applyExpandedState()
 {
+    if (!this->m_object)
+        return;
+
     //TODO inspect this probably can be changed to proper type
-    const QString key = XenObject::TypeToString(this->m_objectType);
+    const QString key = XenObject::TypeToString(this->m_object->GetObjectType());
     if (key.isEmpty())
         return;
 
-    QList<PDSection*> expanded = expandedSections_.value(key);
+    QList<PDSection*> expanded = this->m_expandedSections.value(key);
     if (expanded.isEmpty())
         expanded = { this->ui->pdSectionGeneral };
 
-    for (PDSection* section : this->sections_)
+    for (PDSection* section : this->m_sections)
     {
         if (!section || !section->isVisible())
             continue;
@@ -504,16 +507,16 @@ void GeneralTabPage::onSectionExpandedChanged(PDSection* section)
     if (!this->m_object)
         return;
 
-    const QString key = XenObject::TypeToString(this->m_objectType);
+    const QString key = this->m_object->GetObjectTypeName();
     if (!key.isEmpty())
     {
         QList<PDSection*> expanded;
-        for (PDSection* s : this->sections_)
+        for (PDSection* s : this->m_sections)
         {
             if (s && s->isVisible() && s->IsExpanded())
                 expanded.append(s);
         }
-        expandedSections_.insert(key, expanded);
+        m_expandedSections.insert(key, expanded);
     }
 
     this->updateExpandCollapseButtons();
@@ -814,7 +817,10 @@ void GeneralTabPage::populateCustomFieldsSection()
 
 void GeneralTabPage::populateBootOptionsSection()
 {
-    if (this->m_objectType != XenObjectType::VM)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() != XenObjectType::VM)
         return;
 
     QSharedPointer<VM> vm = qSharedPointerDynamicCast<VM>(this->m_object);
@@ -880,7 +886,10 @@ void GeneralTabPage::populateHighAvailabilitySection()
 
 void GeneralTabPage::populateMultipathBootSection()
 {
-    if (this->m_objectType != XenObjectType::Host)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() != XenObjectType::Host)
         return;
 
     // Boot path counts are not currently exposed in the Qt port.
@@ -923,7 +932,10 @@ void GeneralTabPage::populateVcpusSection()
 
 void GeneralTabPage::populateDockerInfoSection()
 {
-    if (this->m_objectType != XenObjectType::DockerContainer)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() != XenObjectType::DockerContainer)
         return;
 
     QSharedPointer<DockerContainer> container = qSharedPointerDynamicCast<DockerContainer>(this->m_object);
@@ -1156,12 +1168,12 @@ void GeneralTabPage::populateGeneralSection()
 
 void GeneralTabPage::populateCertificateSection()
 {
-    if (!this->m_connection || !this->m_connection->GetCache())
+    if (!this->m_object)
         return;
 
-    XenCache* cache = this->m_connection->GetCache();
+    XenCache* cache = this->m_object->GetCache();
 
-    if (this->m_objectType == XenObjectType::Host)
+    if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
         QSharedPointer<Host> host = qSharedPointerDynamicCast<Host>(this->m_object);
         if (!host)
@@ -1190,8 +1202,7 @@ void GeneralTabPage::populateCertificateSection()
                               formatCertificateType(certificate->Type()),
                               formatCertificateValue(certificate));
         }
-    }
-    else if (this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Pool)
     {
         QList<QSharedPointer<Certificate>> certificates = cache->GetAll<Certificate>(XenObjectType::Certificate);
         certificates.erase(std::remove_if(certificates.begin(), certificates.end(),
@@ -1268,10 +1279,10 @@ void GeneralTabPage::populateManagementInterfacesSection()
     // Management Interfaces Section
     // C# Reference: GenerateInterfaceBox lines 396-461 (fillInterfacesForHost)
 
-    if (!this->m_connection)
+    if (!this->m_object)
         return;
 
-    XenCache* cache = this->m_connection->GetCache();
+    XenCache* cache = this->m_object->GetCache();
     if (!cache)
         return;
 
@@ -1305,11 +1316,11 @@ void GeneralTabPage::populateManagementInterfacesSection()
         }
     };
 
-    if (this->m_objectType == XenObjectType::Host)
+    if (this->m_object->GetObjectType() == XenObjectType::Host)
     {
         QSharedPointer<Host> host = qSharedPointerDynamicCast<Host>(this->m_object);
         addInterfacesForHost(host, false);
-    } else if (this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Pool)
     {
         QSharedPointer<Pool> pool = qSharedPointerDynamicCast<Pool>(this->m_object);
         if (!pool)

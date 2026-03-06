@@ -111,11 +111,9 @@ class BaseTabPage : public QWidget
         /**
          * Check if this tab page is applicable for the given object type.
          */
-        virtual bool IsApplicableForObjectType(const QString& objectType) const = 0;
+        virtual bool IsApplicableForObjectType(XenObjectType objectType) const = 0;
 
     protected:
-        XenObjectType m_objectType = XenObjectType::Null;
-        QString m_objectRef;
         QSharedPointer<XenObject> m_object;
         QVariantMap m_objectData;
         XenConnection* m_connection = nullptr;

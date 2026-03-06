@@ -422,8 +422,7 @@ void MultipleDvdIsoList::onLinkLabelEjectClicked()
     ChangeVMISOAction* action = new ChangeVMISOAction(
         this->m_vm,
         QString(),  // Empty VDI ref = eject
-        vbdRef,
-        this
+        vbdRef
     );
     
     connect(action, &AsyncOperation::completed, action, [this, action]()

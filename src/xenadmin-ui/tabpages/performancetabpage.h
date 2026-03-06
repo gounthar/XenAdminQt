@@ -67,7 +67,7 @@ class PerformanceTabPage : public BaseTabPage
         QString GetTitle() const override { return "Performance"; }
         Type GetType() const override { return Type::Performance; }
         QString HelpID() const override { return "TabPagePerformance"; }
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
         void OnPageShown() override;
         void OnPageHidden() override;

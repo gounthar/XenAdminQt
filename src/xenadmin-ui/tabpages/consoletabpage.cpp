@@ -59,10 +59,10 @@ ConsoleTabPage::~ConsoleTabPage()
  * @brief Check if tab is applicable for object type
  * Reference: Console tab is shown for VMs and Hosts
  */
-bool ConsoleTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool ConsoleTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // Console tab is applicable to VMs and Hosts
-    return objectType == "vm" || objectType == "host";
+    return objectType == XenObjectType::VM || objectType == XenObjectType::Host;
 }
 
 /**

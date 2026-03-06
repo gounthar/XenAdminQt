@@ -106,12 +106,12 @@ NetworkTabPage::~NetworkTabPage()
     delete this->ui;
 }
 
-bool NetworkTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool NetworkTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
     // Network tab is applicable to VMs, Hosts, and Pools
     // For VMs: shows network interfaces (VIFs)
     // For Hosts/Pools: shows network infrastructure
-    return objectType == "vm" || objectType == "host" || objectType == "pool";
+    return objectType == XenObjectType::VM || objectType == XenObjectType::Host || objectType == XenObjectType::Pool;
 }
 
 void NetworkTabPage::refreshContent()
@@ -472,12 +472,10 @@ void NetworkTabPage::populateNetworksForPool()
 
 void NetworkTabPage::addNetworkRow(QSharedPointer<Network> network)
 {
-    if (!network)
+    if (!network || !network->IsValid() || !this->m_object)
         return;
 
-    XenCache* cache = network->GetCache();
-    if (!network->IsValid() || !cache)
-        return;
+    XenCache* cache = this->m_object->GetCache();
 
     int row = this->ui->networksTable->rowCount();
     this->ui->networksTable->insertRow(row);
@@ -534,7 +532,7 @@ void NetworkTabPage::addNetworkRow(QSharedPointer<Network> network)
 
         // Link Status: Must check PIF_metrics.carrier, NOT currently_attached
         // C# NetworkRow.UpdateDetails(): LinkStatusCell.Value = Xmo is Pool ? Network.LinkStatusString() : Pif == null ? Messages.NONE : Pif.LinkStatusString();
-        if (this->m_objectType == XenObjectType::Pool)
+        if (this->m_object->GetObjectType() == XenObjectType::Pool)
         {
             // For pools, aggregate link status across all PIFs (C# Network.LinkStatusString())
             linkStatus = network->GetLinkStatusString();
@@ -859,6 +857,9 @@ QString NetworkTabPage::getSelectedPifRef() const
 
 void NetworkTabPage::showNetworksContextMenu(const QPoint& pos)
 {
+    if (!this->m_object)
+        return;
+
     QPoint globalPos = this->ui->networksTable->mapToGlobal(pos);
 
     // Get item at position
@@ -867,7 +868,7 @@ void NetworkTabPage::showNetworksContextMenu(const QPoint& pos)
     QMenu contextMenu;
 
     // Build "Copy" submenu for VM VIF rows
-    if (item && this->m_objectType == XenObjectType::VM)
+    if (item && this->m_object->GetObjectType() == XenObjectType::VM)
     {
         int row = item->row();
 
@@ -952,7 +953,7 @@ void NetworkTabPage::showNetworksContextMenu(const QPoint& pos)
 
     // For VMs: Add/Edit/Remove VIF actions
     // For Host/Pool: Add/Edit/Remove Network actions
-    if (this->m_objectType == XenObjectType::VM)
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         // VM-specific actions (VIF management)
         QAction* addAction = contextMenu.addAction(tr("Add Interface..."));
@@ -967,7 +968,7 @@ void NetworkTabPage::showNetworksContextMenu(const QPoint& pos)
             QAction* removeAction = contextMenu.addAction(tr("Remove Interface"));
             connect(removeAction, &QAction::triggered, this, &NetworkTabPage::onRemoveNetwork);
         }
-    } else if (this->m_objectType == XenObjectType::Host || this->m_objectType == XenObjectType::Pool)
+    } else if (this->m_object->GetObjectType() == XenObjectType::Host || this->m_object->GetObjectType() == XenObjectType::Pool)
     {
         // Host/Pool-specific actions (Network management)
         QAction* addAction = contextMenu.addAction(tr("Add Network..."));
@@ -1148,13 +1149,13 @@ void NetworkTabPage::onAddNetwork()
 {
     // Match C# NetworkList::AddNetworkButton_Click
 
-    if (!this->m_connection || !this->m_connection->IsConnected())
+    if (!this->m_object || !this->m_object->IsConnected())
     {
-        QMessageBox::warning(this, tr("Not Connected"), tr("Not connected to XenServer."));
+        QMessageBox::warning(this, tr("Not Connected"), tr("Not connected to XenServer, or invalid object selected"));
         return;
     }
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         // C#: For VMs, check MaxVIFsAllowed() then show VIFDialog
         int currentVifCount = this->ui->networksTable->rowCount();
@@ -1183,9 +1184,7 @@ void NetworkTabPage::onAddNetwork()
         while (usedDevices.contains(deviceId))
             deviceId++;
 
-        QSharedPointer<VM> vm = this->m_connection && this->m_connection->GetCache()
-            ? this->m_connection->GetCache()->ResolveObject<VM>(XenObjectType::VM, this->m_objectRef)
-            : QSharedPointer<VM>();
+        QSharedPointer<VM> vm = qSharedPointerDynamicCast<VM>(this->m_object);
         if (!vm || !vm->IsValid())
             return;
 
@@ -1196,21 +1195,17 @@ void NetworkTabPage::onAddNetwork()
             QVariantMap vifSettings = dialog.getVifSettings();
 
             // Create VIF using CreateVIFAction
-            CreateVIFAction* action = new CreateVIFAction(this->m_connection,
-                                                          this->m_objectRef, // VM ref
-                                                          vifSettings,
-                                                          this);
+            CreateVIFAction* action = new CreateVIFAction(this->m_connection, this->m_object->OpaqueRef(), vifSettings);
 
             // Matches C# NetworkList.cs createVIFAction_Completed (line 539)
-            connect(action, &CreateVIFAction::completed, this, [this, action]() {
+            connect(action, &CreateVIFAction::completed, this, [this, action]()
+            {
                 if (action->GetState() == AsyncOperation::OperationState::Completed)
                 {
                     // Check if reboot is required for hot-plug (matches C# line 544)
                     if (action->rebootRequired())
                     {
-                        QMessageBox::information(this,
-                                                 tr("Virtual Network Device Changes"),
-                                                 tr("The virtual network device changes will take effect when you shut down and then restart the VM."));
+                        QMessageBox::information(this, tr("Virtual Network Device Changes"), tr("The virtual network device changes will take effect when you shut down and then restart the VM."));
                     }
 
                     //qDebug() << "VIF created successfully";
@@ -1220,7 +1215,8 @@ void NetworkTabPage::onAddNetwork()
                 action->deleteLater();
             });
 
-            connect(action, &CreateVIFAction::failed, this, [this, action](const QString& error) {
+            connect(action, &CreateVIFAction::failed, this, [this, action](const QString& error)
+            {
                 QMessageBox::critical(this, tr("Create VIF Failed"), tr("Failed to create network interface.\n\nError: %1").arg(error));
                 action->deleteLater();
             });
@@ -1237,11 +1233,11 @@ void NetworkTabPage::onAddNetwork()
     {
         QSharedPointer<Pool> pool;
         QSharedPointer<Host> host;
-        if (this->m_objectType == XenObjectType::Pool)
+        if (this->m_object->GetObjectType() == XenObjectType::Pool)
         {
             pool = qSharedPointerDynamicCast<Pool>(this->m_object);
             host = pool ? pool->GetMasterHost() : QSharedPointer<Host>();
-        } else if (this->m_objectType == XenObjectType::Host)
+        } else if (this->m_object->GetObjectType() == XenObjectType::Host)
         {
             host = qSharedPointerDynamicCast<Host>(this->m_object);
         }
@@ -1256,7 +1252,10 @@ void NetworkTabPage::onEditNetwork()
 {
     // Match C# NetworkList::EditNetworkButton_Click
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         // C#: launchVmNetworkSettingsDialog() - opens VIFDialog
         QString vifRef = getSelectedVifRef();
@@ -1276,13 +1275,10 @@ void NetworkTabPage::onEditNetwork()
             QVariantMap newSettings = dialog.getVifSettings();
 
             // Update VIF using UpdateVIFAction
-            UpdateVIFAction* action = new UpdateVIFAction(this->m_connection,
-                                                          this->m_objectRef, // VM ref
-                                                          vifRef,            // old VIF ref
-                                                          newSettings,       // new settings
-                                                          this);
+            UpdateVIFAction* action = new UpdateVIFAction(this->m_connection, this->m_object->OpaqueRef(), vifRef, newSettings);
 
-            connect(action, &UpdateVIFAction::completed, this, [this, action]() {
+            connect(action, &UpdateVIFAction::completed, this, [this, action]()
+            {
                 if (action->GetState() == AsyncOperation::OperationState::Completed)
                 {
                     qDebug() << "VIF updated successfully";
@@ -1335,7 +1331,10 @@ void NetworkTabPage::onRemoveNetwork()
 {
     // Match C# NetworkList::RemoveNetworkButton_Click
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         // C#: Use DeleteVIFAction for VMs
         QSharedPointer<VIF> vif = getSelectedVif();
@@ -1436,7 +1435,10 @@ void NetworkTabPage::onActivateToggle()
 {
     // Match C# NetworkList::buttonActivateToggle_Click
 
-    if (this->m_objectType != XenObjectType::VM)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() != XenObjectType::VM)
         return;
 
     QSharedPointer<VIF> vif = getSelectedVif();
@@ -1577,17 +1579,20 @@ QString NetworkTabPage::getSelectedVifRef() const
 
 QSharedPointer<VIF> NetworkTabPage::getSelectedVif() const
 {
-    if (!this->m_connection)
+    if (!this->m_object)
         return QSharedPointer<VIF>();
 
-    return this->m_connection->GetCache()->ResolveObject<VIF>(this->getSelectedVifRef());
+    return this->m_object->GetCache()->ResolveObject<VIF>(this->getSelectedVifRef());
 }
 
 void NetworkTabPage::updateButtonStates()
 {
     // Match C# NetworkList::UpdateEnablement()
 
-    if (this->m_objectType == XenObjectType::VM)
+    if (!this->m_object)
+        return;
+
+    if (this->m_object->GetObjectType() == XenObjectType::VM)
     {
         QSharedPointer<VIF> vif = this->getSelectedVif();
         bool hasSelection = !vif.isNull() && vif->IsValid();

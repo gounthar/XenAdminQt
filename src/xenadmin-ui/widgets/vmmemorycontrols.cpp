@@ -42,8 +42,8 @@ void VMMemoryControls::SetupUi()
     mainLayout->setSpacing(10);
     
     // Add shiny bar at top
-    this->vmShinyBar_ = new VMShinyBar(this);
-    mainLayout->addWidget(this->vmShinyBar_);
+    this->m_vmShinyBar = new VMShinyBar(this);
+    mainLayout->addWidget(this->m_vmShinyBar);
     
     // Statistics grid
     QGridLayout* gridLayout = new QGridLayout();
@@ -53,24 +53,24 @@ void VMMemoryControls::SetupUi()
     int row = 0;
     
     // Dynamic Minimum
-    this->labelDynMin_ = new QLabel(tr("Dynamic Minimum:"), this);
-    this->valueDynMin_ = new QLabel("", this);
-    gridLayout->addWidget(this->labelDynMin_, row, 0, Qt::AlignRight);
-    gridLayout->addWidget(this->valueDynMin_, row, 1);
+    this->m_labelDynMin = new QLabel(tr("Dynamic Minimum:"), this);
+    this->m_valueDynMin = new QLabel("", this);
+    gridLayout->addWidget(this->m_labelDynMin, row, 0, Qt::AlignRight);
+    gridLayout->addWidget(this->m_valueDynMin, row, 1);
     row++;
     
     // Dynamic Maximum
-    this->labelDynMax_ = new QLabel(tr("Dynamic Maximum:"), this);
-    this->valueDynMax_ = new QLabel("", this);
-    gridLayout->addWidget(this->labelDynMax_, row, 0, Qt::AlignRight);
-    gridLayout->addWidget(this->valueDynMax_, row, 1);
+    this->m_labelDynMax = new QLabel(tr("Dynamic Maximum:"), this);
+    this->m_valueDynMax = new QLabel("", this);
+    gridLayout->addWidget(this->m_labelDynMax, row, 0, Qt::AlignRight);
+    gridLayout->addWidget(this->m_valueDynMax, row, 1);
     row++;
     
     // Static Maximum (may be hidden if same as dynamic max)
-    this->labelStatMax_ = new QLabel(tr("Static Maximum:"), this);
-    this->valueStatMax_ = new QLabel("", this);
-    gridLayout->addWidget(this->labelStatMax_, row, 0, Qt::AlignRight);
-    gridLayout->addWidget(this->valueStatMax_, row, 1);
+    this->m_labelStatMax = new QLabel(tr("Static Maximum:"), this);
+    this->m_valueStatMax = new QLabel("", this);
+    gridLayout->addWidget(this->m_labelStatMax, row, 0, Qt::AlignRight);
+    gridLayout->addWidget(this->m_valueStatMax, row, 1);
     
     mainLayout->addLayout(gridLayout);
     mainLayout->addStretch();
@@ -80,15 +80,15 @@ void VMMemoryControls::SetVMs(const QList<QSharedPointer<VM>>& vms)
 {
     this->UnregisterHandlers();
     
-    this->vms_ = vms;
+    this->m_vms = vms;
     
-    if (this->vms_.isEmpty())
+    if (this->m_vms.isEmpty())
     {
         return;
     }
     
     // Subscribe to VM property changes
-    for (const QSharedPointer<VM>& vm : this->vms_)
+    for (const QSharedPointer<VM>& vm : this->m_vms)
     {
         if (vm && !vm->IsEvicted())
         {
@@ -108,7 +108,7 @@ void VMMemoryControls::SetVMs(const QList<QSharedPointer<VM>>& vms)
 
 void VMMemoryControls::UnregisterHandlers()
 {
-    for (const QSharedPointer<VM>& vm : this->vms_)
+    for (const QSharedPointer<VM>& vm : this->m_vms)
     {
         if (vm && !vm->IsEvicted())
         {
@@ -125,24 +125,24 @@ void VMMemoryControls::UnregisterHandlers()
 
 void VMMemoryControls::Refresh()
 {
-    if (this->vms_.isEmpty())
+    if (this->m_vms.isEmpty())
     {
         // Clear all values
-        this->valueDynMin_->setText("");
-        this->valueDynMax_->setText("");
-        this->valueStatMax_->setText("");
+        this->m_valueDynMin->setText("");
+        this->m_valueDynMax->setText("");
+        this->m_valueStatMax->setText("");
         return;
     }
     
     // Use first VM for display (C# does the same)
-    QSharedPointer<VM> vm0 = this->vms_.first();
+    QSharedPointer<VM> vm0 = this->m_vms.first();
     if (!vm0 || vm0->IsEvicted())
     {
         return;
     }
     
     // Update VMShinyBar
-    this->vmShinyBar_->Populate(this->vms_, false);
+    this->m_vmShinyBar->Populate(this->m_vms, false);
     
     // Check if VM supports ballooning
     bool supportsBallooning = vm0->SupportsBallooning();
@@ -154,38 +154,38 @@ void VMMemoryControls::Refresh()
         qint64 dynMax = vm0->GetMemoryDynamicMax();
         qint64 statMax = vm0->GetMemoryStaticMax();
         
-        this->valueDynMin_->setText(Misc::FormatSize(dynMin));
-        this->valueDynMax_->setText(Misc::FormatSize(dynMax));
+        this->m_valueDynMin->setText(Misc::FormatSize(dynMin));
+        this->m_valueDynMax->setText(Misc::FormatSize(dynMax));
         
         // Hide static max if it's the same as dynamic max
         if (dynMax == statMax)
         {
-            this->labelStatMax_->setVisible(false);
-            this->valueStatMax_->setVisible(false);
+            this->m_labelStatMax->setVisible(false);
+            this->m_valueStatMax->setVisible(false);
         }
         else
         {
-            this->labelStatMax_->setVisible(true);
-            this->valueStatMax_->setVisible(true);
-            this->valueStatMax_->setText(Misc::FormatSize(statMax));
+            this->m_labelStatMax->setVisible(true);
+            this->m_valueStatMax->setVisible(true);
+            this->m_valueStatMax->setText(Misc::FormatSize(statMax));
         }
         
-        this->labelDynMin_->setText(tr("Dynamic Minimum:"));
-        this->labelDynMax_->setVisible(true);
-        this->valueDynMax_->setVisible(true);
+        this->m_labelDynMin->setText(tr("Dynamic Minimum:"));
+        this->m_labelDynMax->setVisible(true);
+        this->m_valueDynMax->setVisible(true);
     }
     else
     {
         // For VMs without ballooning, just show static memory as "Memory"
         qint64 statMax = vm0->GetMemoryStaticMax();
-        this->valueDynMin_->setText(Misc::FormatSize(statMax));
-        this->labelDynMin_->setText(tr("Memory:"));
+        this->m_valueDynMin->setText(Misc::FormatSize(statMax));
+        this->m_labelDynMin->setText(tr("Memory:"));
         
         // Hide dynamic max and static max rows
-        this->labelDynMax_->setVisible(false);
-        this->valueDynMax_->setVisible(false);
-        this->labelStatMax_->setVisible(false);
-        this->valueStatMax_->setVisible(false);
+        this->m_labelDynMax->setVisible(false);
+        this->m_valueDynMax->setVisible(false);
+        this->m_labelStatMax->setVisible(false);
+        this->m_valueStatMax->setVisible(false);
     }
 }
 

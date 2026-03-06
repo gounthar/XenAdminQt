@@ -72,9 +72,9 @@ GpuTabPage::~GpuTabPage()
     delete this->ui;
 }
 
-bool GpuTabPage::IsApplicableForObjectType(const QString& objectType) const
+bool GpuTabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
-    return objectType == QLatin1String("host") || objectType == QLatin1String("pool");
+    return objectType == XenObjectType::Host || objectType == XenObjectType::Pool;
 }
 
 void GpuTabPage::OnPageShown()
@@ -139,17 +139,17 @@ void GpuTabPage::rebuild()
     this->m_noGpuLabelContainer = nullptr;
     this->m_rowsByPgpuRef.clear();
 
-    if (!this->m_object || !this->m_connection || !this->m_connection->GetCache())
+    if (!this->m_object)
     {
         this->ui->pageLayout->addStretch();
         return;
     }
 
-    XenCache* cache = this->m_connection->GetCache();
+    XenCache* cache = this->m_object->GetCache();
     QList<QSharedPointer<PGPU>> pGpus = cache->GetAll<PGPU>(XenObjectType::PGPU);
-    const bool isPool = this->m_objectType == XenObjectType::Pool;
-    const bool isHost = this->m_objectType == XenObjectType::Host;
-    const QString selectedHostRef = isHost ? this->m_objectRef : QString();
+    const bool isPool = this->m_object->GetObjectType() == XenObjectType::Pool;
+    const bool isHost = this->m_object->GetObjectType() == XenObjectType::Host;
+    const QString selectedHostRef = isHost ? this->m_object->OpaqueRef() : QString();
 
     pGpus.erase(std::remove_if(pGpus.begin(), pGpus.end(), [&](const QSharedPointer<PGPU>& pgpu) {
                     if (!pgpu || !pgpu->IsValid())

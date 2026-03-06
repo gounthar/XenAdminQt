@@ -54,13 +54,13 @@ class VMMemoryRow : public QWidget
          * @brief Get the VMs this row displays
          * @return List of VM objects
          */
-        QList<QSharedPointer<VM>> GetVMs() const { return this->vms_; }
+        QList<QSharedPointer<VM>> GetVMs() const { return this->m_vms; }
 
         /**
          * @brief Check if row is in expanded mode
          * @return True if expanded
          */
-        bool IsExpanded() const { return this->expanded_; }
+        bool IsExpanded() const { return this->m_expanded; }
 
         /**
          * @brief Unregister all event handlers
@@ -68,11 +68,11 @@ class VMMemoryRow : public QWidget
         void UnregisterHandlers();
 
     private:
-        QList<QSharedPointer<VM>> vms_;
-        bool expanded_;
-        QFrame* panelLabel_;
-        QFrame* panelControls_;
-        VMMemoryControls* vmMemoryControls_;
+        QList<QSharedPointer<VM>> m_vms;
+        bool m_expanded;
+        QFrame* m_panelLabel;
+        QFrame* m_panelControls;
+        VMMemoryControls* m_vmMemoryControls;
         
         void SetupUi();
 };

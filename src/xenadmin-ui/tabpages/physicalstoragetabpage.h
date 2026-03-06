@@ -74,7 +74,7 @@ class PhysicalStorageTabPage : public BaseTabPage
             return "TabPageStorage";
         }
 
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
 
     protected:
         void refreshContent() override;

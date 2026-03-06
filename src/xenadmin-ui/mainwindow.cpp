@@ -982,8 +982,6 @@ QList<BaseTabPage*> MainWindow::getNewTabPages(QSharedPointer<XenObject> xen_obj
     QList<BaseTabPage*> newTabs;
 
     const XenObjectType objectType = xen_obj->GetObjectType();
-    const QString objectTypeName = xen_obj->GetObjectTypeName();
-
     const bool isHost = (objectType == XenObjectType::Host);
     const bool isVM = (objectType == XenObjectType::VM);
     const bool isPool = (objectType == XenObjectType::Pool);
@@ -1155,7 +1153,7 @@ QList<BaseTabPage*> MainWindow::getNewTabPages(QSharedPointer<XenObject> xen_obj
     {
         for (BaseTabPage* tab : this->m_tabPages)
         {
-            if (tab->IsApplicableForObjectType(objectTypeName))
+            if (tab->IsApplicableForObjectType(xen_obj->GetObjectType()))
                 newTabs.append(tab);
         }
     }

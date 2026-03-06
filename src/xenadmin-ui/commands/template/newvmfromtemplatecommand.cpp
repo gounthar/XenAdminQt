@@ -29,6 +29,9 @@
 #include "../../mainwindow.h"
 #include "../vm/newvmcommand.h"
 #include "xenlib/xen/vm.h"
+#include "xenlib/xen/pool.h"
+#include "xenlib/xen/network/connection.h"
+#include "xenlib/xencache.h"
 #include <QMessageBox>
 
 NewVMFromTemplateCommand::NewVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : TemplateCommand(mainWindow, parent)
@@ -37,7 +40,7 @@ NewVMFromTemplateCommand::NewVMFromTemplateCommand(MainWindow* mainWindow, QObje
 
 bool NewVMFromTemplateCommand::CanRun() const
 {
-    return TemplateCommand::canRunTemplate(this->getTemplate());
+    return this->canRunTemplate(this->getTemplate());
 }
 
 void NewVMFromTemplateCommand::Run()
@@ -47,7 +50,7 @@ void NewVMFromTemplateCommand::Run()
         return;
 
     QSharedPointer<VM> templateVm = this->getTemplate();
-    if (!TemplateCommand::canRunTemplate(templateVm))
+    if (!this->canRunTemplate(templateVm))
     {
         QMessageBox::warning(MainWindow::instance(), "Cannot Create VM", "The selected template cannot be used to create a VM.");
         return;
@@ -70,9 +73,26 @@ QIcon NewVMFromTemplateCommand::GetIcon() const
 
 bool NewVMFromTemplateCommand::poolHasEnabledHosts() const
 {
-    // TODO: Implement check for enabled hosts in pool
-    // Get pool ref from connection
-    // Get all hosts in pool
-    // Check if any host is enabled (not disabled)
-    return true; // Assume true for now
+    QSharedPointer<VM> templateVm = this->getTemplate();
+    if (!templateVm)
+        return false;
+
+    XenConnection* connection = templateVm->GetConnection();
+    XenCache* cache = connection ? connection->GetCache() : nullptr;
+    if (!cache)
+        return false;
+
+    QSharedPointer<Pool> pool = cache->GetPool();
+    if (!pool)
+        pool = cache->GetPoolOfOne();
+
+    return pool && pool->HasEnabledHosts();
+}
+
+bool NewVMFromTemplateCommand::canRunTemplate(const QSharedPointer<VM>& templateVm) const
+{
+    if (!TemplateCommand::canRunTemplate(templateVm))
+        return false;
+
+    return this->poolHasEnabledHosts();
 }

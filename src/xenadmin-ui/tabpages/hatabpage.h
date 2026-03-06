@@ -62,7 +62,7 @@ class HATabPage : public BaseTabPage
             return "TabPageHA";
         }
 
-        bool IsApplicableForObjectType(const QString& objectType) const override;
+        bool IsApplicableForObjectType(XenObjectType objectType) const override;
         void OnPageShown() override;
         void OnPageHidden() override;
 

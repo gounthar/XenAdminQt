@@ -87,9 +87,9 @@ HATabPage::~HATabPage()
     delete this->ui;
 }
 
-bool HATabPage::IsApplicableForObjectType(const QString& objectType) const
+bool HATabPage::IsApplicableForObjectType(XenObjectType objectType) const
 {
-    return objectType == "pool";
+    return objectType == XenObjectType::Pool;
 }
 
 void HATabPage::OnPageShown()
