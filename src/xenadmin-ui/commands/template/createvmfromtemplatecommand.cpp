@@ -27,10 +27,8 @@
 
 #include "createvmfromtemplatecommand.h"
 #include "../../mainwindow.h"
-#include "xenlib/xen/vm.h"
-#include "xenlib/xencache.h"
 
-CreateVMFromTemplateCommand::CreateVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : Command(mainWindow, parent)
+CreateVMFromTemplateCommand::CreateVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : TemplateCommand(mainWindow, parent)
 {
 }
 
@@ -48,34 +46,4 @@ void CreateVMFromTemplateCommand::Run()
 QString CreateVMFromTemplateCommand::MenuText() const
 {
     return "Create VM from Template";
-}
-
-QString CreateVMFromTemplateCommand::getSelectedTemplateRef() const
-{
-    QSharedPointer<XenObject> object = this->GetObject();
-    if (!object || !object->GetConnection())
-        return QString();
-
-    XenObjectType objectType = this->getSelectedObjectType();
-    if (objectType != XenObjectType::VM)
-        return QString();
-
-    QString vmRef = this->getSelectedObjectRef();
-    if (vmRef.isEmpty())
-        return QString();
-
-    QSharedPointer<VM> vm = object->GetConnection()->GetCache()->ResolveObject<VM>(XenObjectType::VM, vmRef);
-    if (!vm)
-        return QString();
-
-    // Check if it's a template
-    if (!vm->IsTemplate())
-        return QString();
-
-    return vmRef;
-}
-
-bool CreateVMFromTemplateCommand::isTemplateSelected() const
-{
-    return !this->getSelectedTemplateRef().isEmpty();
 }

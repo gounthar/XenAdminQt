@@ -28,13 +28,13 @@
 #ifndef INSTANTVMFROMTEMPLATECOMMAND_H
 #define INSTANTVMFROMTEMPLATECOMMAND_H
 
-#include "../command.h"
+#include "templatecommand.h"
 #include <QSharedPointer>
 
 class VM;
 
 // Fast VM creation from instant template (auto-starts)
-class InstantVMFromTemplateCommand : public Command
+class InstantVMFromTemplateCommand : public TemplateCommand
 {
     Q_OBJECT
 
@@ -47,8 +47,7 @@ class InstantVMFromTemplateCommand : public Command
         QString MenuText() const override;
 
     private:
-        QString getSelectedTemplateRef() const;
-        bool canRunTemplate(const QSharedPointer<VM>& templateVm) const;
+        bool canRunTemplate(const QSharedPointer<VM>& templateVm) const override;
 };
 
 #endif // INSTANTVMFROMTEMPLATECOMMAND_H

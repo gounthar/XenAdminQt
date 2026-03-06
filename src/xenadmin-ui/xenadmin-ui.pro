@@ -211,6 +211,7 @@ SOURCES += \
     commands/vm/disablechangedblocktrackingcommand.cpp \
     commands/vm/importvmcommand.cpp \
     commands/template/deletetemplatecommand.cpp \
+    commands/template/templatecommand.cpp \
     commands/template/exporttemplatecommand.cpp \
     commands/template/createvmfromtemplatecommand.cpp \
     commands/template/newvmfromtemplatecommand.cpp \
@@ -525,6 +526,7 @@ HEADERS += \
     commands/vm/disablechangedblocktrackingcommand.h \
     commands/vm/importvmcommand.h \
     commands/template/deletetemplatecommand.h \
+    commands/template/templatecommand.h \
     commands/template/exporttemplatecommand.h \
     commands/template/createvmfromtemplatecommand.h \
     commands/template/newvmfromtemplatecommand.h \

@@ -28,13 +28,13 @@
 #ifndef NEWVMFROMTEMPLATECOMMAND_H
 #define NEWVMFROMTEMPLATECOMMAND_H
 
-#include "../command.h"
+#include "templatecommand.h"
 #include <QSharedPointer>
 
 class VM;
 
 // Launch full VM creation wizard with template as source
-class NewVMFromTemplateCommand : public Command
+class NewVMFromTemplateCommand : public TemplateCommand
 {
     Q_OBJECT
 
@@ -48,8 +48,6 @@ class NewVMFromTemplateCommand : public Command
         QIcon GetIcon() const override;
 
     private:
-        QString getSelectedTemplateRef() const;
-        bool canRunTemplate(const QSharedPointer<VM>& templateVm) const;
         bool poolHasEnabledHosts() const;
 };
 

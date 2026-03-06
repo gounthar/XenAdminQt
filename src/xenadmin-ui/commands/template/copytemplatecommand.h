@@ -28,13 +28,13 @@
 #ifndef COPYTEMPLATECOMMAND_H
 #define COPYTEMPLATECOMMAND_H
 
-#include "../command.h"
+#include "templatecommand.h"
 #include <QSharedPointer>
 
 class VM;
 
 // Duplicate template (clone/copy to same or different SR)
-class CopyTemplateCommand : public Command
+class CopyTemplateCommand : public TemplateCommand
 {
     Q_OBJECT
 
@@ -47,8 +47,7 @@ class CopyTemplateCommand : public Command
         QString MenuText() const override;
 
     private:
-        QString getSelectedTemplateRef() const;
-        bool canRunTemplate(const QSharedPointer<VM>& templateVm) const;
+        bool canRunTemplate(const QSharedPointer<VM>& templateVm) const override;
         bool canLaunchMigrateWizard(const QSharedPointer<VM>& templateVm) const;
 };
 

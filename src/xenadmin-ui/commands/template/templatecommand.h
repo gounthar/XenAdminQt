@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Petr Bena <petr@bena.rocks>
+ * Copyright (c) 2026, Petr Bena <petr@bena.rocks>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,25 +25,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CREATEVMFROMTEMPLATECOMMAND_H
-#define CREATEVMFROMTEMPLATECOMMAND_H
+#ifndef TEMPLATECOMMAND_H
+#define TEMPLATECOMMAND_H
 
-#include "templatecommand.h"
+#include "../command.h"
+#include <QSharedPointer>
 
-// Submenu command that delegates to NewVMFromTemplate or InstantVM
-class CreateVMFromTemplateCommand : public TemplateCommand
+class VM;
+
+class TemplateCommand : public Command
 {
-    Q_OBJECT
-
     public:
-        explicit CreateVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent = nullptr);
+        explicit TemplateCommand(MainWindow* mainWindow, QObject* parent = nullptr);
 
-        // Inherited from Command
-        bool CanRun() const override;
-        void Run() override;
-        QString MenuText() const override;
-
-    private:
+    protected:
+        QString getSelectedTemplateRef() const;
+        QSharedPointer<VM> getTemplate() const;
+        QString getSelectedTemplateName() const;
+        bool isTemplateSelected() const;
+        virtual bool canRunTemplate(const QSharedPointer<VM>& templateVm) const;
 };
 
-#endif // CREATEVMFROMTEMPLATECOMMAND_H
+#endif // TEMPLATECOMMAND_H

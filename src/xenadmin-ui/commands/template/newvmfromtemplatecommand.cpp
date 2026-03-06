@@ -28,51 +28,26 @@
 #include "newvmfromtemplatecommand.h"
 #include "../../mainwindow.h"
 #include "../vm/newvmcommand.h"
-#include "xenlib/xencache.h"
-#include "xenlib/xen/network/connection.h"
-#include "xenlib/xen/xenobject.h"
 #include "xenlib/xen/vm.h"
 #include <QMessageBox>
 
-NewVMFromTemplateCommand::NewVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : Command(mainWindow, parent)
+NewVMFromTemplateCommand::NewVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : TemplateCommand(mainWindow, parent)
 {
 }
 
 bool NewVMFromTemplateCommand::CanRun() const
 {
-    XenObjectType objectType = this->getSelectedObjectType();
-    if (objectType != XenObjectType::VM)
-        return false;
-
-    QString templateRef = this->getSelectedObjectRef();
-    if (templateRef.isEmpty())
-        return false;
-
-    QSharedPointer<XenObject> selectedObject = this->GetObject();
-    if (!selectedObject)
-        return false;
-
-    XenConnection* connection = selectedObject->GetConnection();
-    XenCache* cache = connection ? connection->GetCache() : nullptr;
-    if (!cache)
-        return false;
-
-    QSharedPointer<VM> templateVm = cache->ResolveObject<VM>(XenObjectType::VM, templateRef);
-    return this->canRunTemplate(templateVm);
+    return TemplateCommand::canRunTemplate(this->getTemplate());
 }
 
 void NewVMFromTemplateCommand::Run()
 {
-    QString templateRef = this->getSelectedObjectRef();
+    QString templateRef = this->getSelectedTemplateRef();
     if (templateRef.isEmpty())
         return;
 
-    QSharedPointer<XenObject> selectedObject = this->GetObject();
-    if (!selectedObject)
-        return;
-
-    QSharedPointer<VM> templateVm = selectedObject->GetCache()->ResolveObject<VM>(XenObjectType::VM, templateRef);
-    if (!this->canRunTemplate(templateVm))
+    QSharedPointer<VM> templateVm = this->getTemplate();
+    if (!TemplateCommand::canRunTemplate(templateVm))
     {
         QMessageBox::warning(MainWindow::instance(), "Cannot Create VM", "The selected template cannot be used to create a VM.");
         return;
@@ -91,48 +66,6 @@ QString NewVMFromTemplateCommand::MenuText() const
 QIcon NewVMFromTemplateCommand::GetIcon() const
 {
     return QIcon(":/icons/vm_create_16.png");
-}
-
-QString NewVMFromTemplateCommand::getSelectedTemplateRef() const
-{
-    if (this->getSelectedObjectType() != XenObjectType::VM)
-        return QString();
-
-    return this->getSelectedObjectRef();
-}
-
-bool NewVMFromTemplateCommand::canRunTemplate(const QSharedPointer<VM>& templateVm) const
-{
-    if (!templateVm)
-        return false;
-
-    // Must be a template
-    if (!templateVm->IsTemplate())
-        return false;
-
-    // Must not be a snapshot
-    if (templateVm->IsSnapshot())
-        return false;
-
-    // Must not be locked
-    if (!templateVm->CurrentOperations().isEmpty())
-        return false;
-
-    // Connection must be connected
-    QSharedPointer<XenObject> selectedObject = this->GetObject();
-    if (!selectedObject)
-        return false;
-
-    XenConnection* connection = selectedObject->GetConnection();
-    if (!connection || !connection->IsConnected())
-        return false;
-
-    // Pool must have enabled hosts
-    // TODO: Implement poolHasEnabledHosts() check
-    // if (!this->poolHasEnabledHosts())
-    //     return false;
-
-    return true;
 }
 
 bool NewVMFromTemplateCommand::poolHasEnabledHosts() const

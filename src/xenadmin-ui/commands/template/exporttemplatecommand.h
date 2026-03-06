@@ -28,9 +28,9 @@
 #ifndef EXPORTTEMPLATECOMMAND_H
 #define EXPORTTEMPLATECOMMAND_H
 
-#include "../command.h"
+#include "templatecommand.h"
 
-class ExportTemplateCommand : public Command
+class ExportTemplateCommand : public TemplateCommand
 {
     Q_OBJECT
 
@@ -43,8 +43,6 @@ class ExportTemplateCommand : public Command
         QString MenuText() const override;
 
     private:
-        QString getSelectedTemplateRef() const;
-        QString getSelectedTemplateName() const;
         bool canExportTemplate(const QString& templateRef) const;
 };
 

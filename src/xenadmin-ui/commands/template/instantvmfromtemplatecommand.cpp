@@ -28,42 +28,20 @@
 #include "instantvmfromtemplatecommand.h"
 #include "../../mainwindow.h"
 #include "xenlib/xen/vm.h"
-#include "xenlib/xencache.h"
 #include <QMessageBox>
 
-InstantVMFromTemplateCommand::InstantVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : Command(mainWindow, parent)
+InstantVMFromTemplateCommand::InstantVMFromTemplateCommand(MainWindow* mainWindow, QObject* parent) : TemplateCommand(mainWindow, parent)
 {
 }
 
 bool InstantVMFromTemplateCommand::CanRun() const
 {
-    QSharedPointer<XenObject> object = this->GetObject();
-    if (!object || !object->GetConnection())
-        return false;
-
-    XenObjectType objectType = this->getSelectedObjectType();
-    if (objectType != XenObjectType::VM)
-        return false;
-
-    QString templateRef = this->getSelectedObjectRef();
-    if (templateRef.isEmpty())
-        return false;
-
-    QSharedPointer<VM> templateVm = object->GetConnection()->GetCache()->ResolveObject<VM>(XenObjectType::VM, templateRef);
-    return this->canRunTemplate(templateVm);
+    return this->canRunTemplate(this->getTemplate());
 }
 
 void InstantVMFromTemplateCommand::Run()
 {
-    QSharedPointer<XenObject> object = this->GetObject();
-    if (!object || !object->GetConnection())
-        return;
-
-    QString templateRef = this->getSelectedObjectRef();
-    if (templateRef.isEmpty())
-        return;
-
-    QSharedPointer<VM> templateVm = object->GetConnection()->GetCache()->ResolveObject<VM>(XenObjectType::VM, templateRef);
+    QSharedPointer<VM> templateVm = this->getTemplate();
     if (!this->canRunTemplate(templateVm))
     {
         QMessageBox::warning(MainWindow::instance(), "Cannot Create VM",
@@ -90,30 +68,9 @@ QString InstantVMFromTemplateCommand::MenuText() const
     return "Instant VM from Template";
 }
 
-QString InstantVMFromTemplateCommand::getSelectedTemplateRef() const
-{
-    XenObjectType objectType = this->getSelectedObjectType();
-    if (objectType != XenObjectType::VM)
-        return QString();
-
-    return this->getSelectedObjectRef();
-}
-
 bool InstantVMFromTemplateCommand::canRunTemplate(const QSharedPointer<VM>& templateVm) const
 {
-    if (!templateVm)
-        return false;
-
-    // Must be a template
-    if (!templateVm->IsTemplate())
-        return false;
-
-    // Must not be locked
-    if (!templateVm->CurrentOperations().isEmpty())
-        return false;
-
-    // Must not be a snapshot
-    if (templateVm->IsSnapshot())
+    if (!TemplateCommand::canRunTemplate(templateVm))
         return false;
 
     // Must be an instant template

@@ -30,48 +30,21 @@
 #include "../../dialogs/crosspoolmigratewizard.h"
 #include "../../dialogs/copyvmdialog.h"
 #include "../vm/crosspoolmigratecommand.h"
-#include "xenlib/xen/xenobject.h"
 #include "xenlib/xen/vm.h"
-#include "xenlib/xencache.h"
 #include <QMessageBox>
 
-CopyTemplateCommand::CopyTemplateCommand(MainWindow* mainWindow, QObject* parent) : Command(mainWindow, parent)
+CopyTemplateCommand::CopyTemplateCommand(MainWindow* mainWindow, QObject* parent) : TemplateCommand(mainWindow, parent)
 {
 }
 
 bool CopyTemplateCommand::CanRun() const
 {
-    QSharedPointer<XenObject> object = this->GetObject();
-    if (!object || !object->GetConnection())
-        return false;
-
-    XenObjectType objectType = this->getSelectedObjectType();
-    if (objectType != XenObjectType::VM)
-        return false;
-
-    QString templateRef = this->getSelectedObjectRef();
-    if (templateRef.isEmpty())
-        return false;
-
-    QSharedPointer<VM> templateVm = object->GetConnection()->GetCache()->ResolveObject<VM>(XenObjectType::VM, templateRef);
-    return this->canRunTemplate(templateVm);
+    return this->canRunTemplate(this->getTemplate());
 }
 
 void CopyTemplateCommand::Run()
 {
-    QSharedPointer<XenObject> object = this->GetObject();
-    if (!object || !object->GetConnection())
-        return;
-
-    QString templateRef = this->getSelectedObjectRef();
-    if (templateRef.isEmpty())
-        return;
-
-    XenCache* cache = object->GetConnection()->GetCache();
-    if (!cache)
-        return;
-
-    QSharedPointer<VM> templateVm = cache->ResolveObject<VM>(XenObjectType::VM, templateRef);
+    QSharedPointer<VM> templateVm = this->getTemplate();
     if (!this->canRunTemplate(templateVm))
     {
         QMessageBox::warning(MainWindow::instance(), "Cannot Copy Template", "The selected template cannot be copied.");
@@ -94,30 +67,9 @@ QString CopyTemplateCommand::MenuText() const
     return "Copy Template";
 }
 
-QString CopyTemplateCommand::getSelectedTemplateRef() const
-{
-    XenObjectType objectType = this->getSelectedObjectType();
-    if (objectType != XenObjectType::VM)
-        return QString();
-
-    return this->getSelectedObjectRef();
-}
-
 bool CopyTemplateCommand::canRunTemplate(const QSharedPointer<VM>& templateVm) const
 {
-    if (!templateVm)
-        return false;
-
-    // Must be a template
-    if (!templateVm->IsTemplate())
-        return false;
-
-    // Must not be a snapshot
-    if (templateVm->IsSnapshot())
-        return false;
-
-    // Must not be locked
-    if (!templateVm->CurrentOperations().isEmpty())
+    if (!TemplateCommand::canRunTemplate(templateVm))
         return false;
 
     // Check allowed_operations is not null
