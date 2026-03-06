@@ -34,8 +34,7 @@
 #include <QPointer>
 #include <QMessageBox>
 
-DetachVirtualDiskCommand::DetachVirtualDiskCommand(MainWindow* mainWindow, QObject* parent)
-    : VDICommand(mainWindow, parent)
+DetachVirtualDiskCommand::DetachVirtualDiskCommand(MainWindow* mainWindow, QObject* parent) : VDICommand(mainWindow, parent)
 {
 }
 

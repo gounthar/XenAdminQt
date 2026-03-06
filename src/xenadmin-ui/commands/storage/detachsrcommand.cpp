@@ -240,9 +240,7 @@ void DetachSRCommand::Run()
         false,
         false,
         nullptr);
-    connect(multi, &AsyncOperation::completed, multi, &QObject::deleteLater);
-    connect(multi, &AsyncOperation::failed, multi, &QObject::deleteLater);
-    multi->RunAsync();
+    multi->RunAsync(true);
 }
 
 QString DetachSRCommand::currentSR() const

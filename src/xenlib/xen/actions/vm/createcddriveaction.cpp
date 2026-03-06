@@ -89,7 +89,7 @@ void CreateCdDriveAction::run()
     // Check max VBDs allowed (matches C# logic)
     QStringList vbdRefs = this->vm_->GetVBDRefs();
     int currentVbdCount = vbdRefs.count();
-    int maxVbds = this->vm_->MaxVBDsAllowed();
+    int maxVbds = this->vm_->GetMaxVBDsAllowed();
     
     if (currentVbdCount >= maxVbds)
     {

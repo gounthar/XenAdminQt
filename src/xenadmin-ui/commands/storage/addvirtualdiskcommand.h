@@ -50,22 +50,6 @@ class AddVirtualDiskCommand : public Command
         bool isVMSelected() const;
         QString getSelectedRef() const;
         bool canAddDisk() const;
-
-        /**
-         * @brief Get max VBDs allowed for a VM
-         * @param vmData VM data record
-         * @return Maximum number of VBDs allowed
-         */
-        int getMaxVBDsAllowed(const QVariantMap& vmData) const;
-
-        /**
-         * @brief Get current VBD count for a VM
-         * @param cache Cache instance
-         * @param vmRef VM reference
-         * @return Number of VBDs currently attached
-         */
-        int getCurrentVBDCount(const QString& vmRef) const;
-        int getCurrentVBDCount(XenCache* cache, const QString& vmRef) const;
 };
 
 #endif // ADDVIRTUALDISKCOMMAND_H

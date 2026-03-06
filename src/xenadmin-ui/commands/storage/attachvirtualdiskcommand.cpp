@@ -70,8 +70,8 @@ void AttachVirtualDiskCommand::Run()
         return;
 
     // Check VBD limit
-    int maxVBDs = this->getMaxVBDsAllowed(vm);
-    int currentVBDs = this->getCurrentVBDCount(vm);
+    int maxVBDs = vm->GetMaxVBDsAllowed();
+    int currentVBDs = vm->GetVBDRefs().count();
 
     if (currentVBDs >= maxVBDs)
     {
@@ -215,26 +215,4 @@ QString AttachVirtualDiskCommand::getSelectedVMRef() const
     if (!this->isVMSelected())
         return QString();
     return this->getSelectedObjectRef();
-}
-
-int AttachVirtualDiskCommand::getMaxVBDsAllowed(const QSharedPointer<VM>& vm) const
-{
-    if (!vm)
-        return 0;
-
-    // Check allowed_VBD_devices property
-    QVariantList allowedDevices = vm->GetData().value("allowed_VBD_devices").toList();
-    if (!allowedDevices.isEmpty())
-        return allowedDevices.size();
-
-    // Default max VBDs if property not present
-    return 16;
-}
-
-int AttachVirtualDiskCommand::getCurrentVBDCount(const QSharedPointer<VM>& vm) const
-{
-    if (!vm)
-        return 0;
-
-    return vm->GetVBDs().size();
 }

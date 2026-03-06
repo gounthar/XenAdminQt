@@ -805,7 +805,7 @@ int VM::MaxVCPUsAllowed() const
     return static_cast<int>(*std::max_element(values.begin(), values.end()));
 }
 
-int VM::MaxVBDsAllowed() const
+int VM::GetMaxVBDsAllowed() const
 {
     XenCache* cache = this->GetConnection() ? this->GetConnection()->GetCache() : nullptr;
     QVariantMap vmData = this->GetData();

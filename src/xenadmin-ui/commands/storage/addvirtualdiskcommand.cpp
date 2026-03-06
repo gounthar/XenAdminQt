@@ -50,12 +50,12 @@ bool AddVirtualDiskCommand::CanRun() const
 
 void AddVirtualDiskCommand::Run()
 {
-    XenObjectType objectType = this->getSelectedObjectType();
-    QString objectRef = this->getSelectedRef();
     QSharedPointer<XenObject> object = this->GetObject();
     if (!object || !object->GetConnection())
         return;
-    XenCache *cache = object->GetCache();
+
+    XenObjectType objectType = object->GetObjectType();
+    QString objectRef = object->OpaqueRef();
 
     if (objectType == XenObjectType::VM)
     {
@@ -65,9 +65,8 @@ void AddVirtualDiskCommand::Run()
             return;
 
         // Check VBD limit
-        QVariantMap vmData = vm->GetData();
-        int maxVBDs = this->getMaxVBDsAllowed(vmData);
-        int currentVBDs = this->getCurrentVBDCount(cache, objectRef);
+        int maxVBDs = vm->GetMaxVBDsAllowed();
+        int currentVBDs = vm->GetVBDRefs().count();
 
         if (currentVBDs >= maxVBDs)
         {
@@ -263,17 +262,15 @@ QString AddVirtualDiskCommand::getSelectedRef() const
 
 bool AddVirtualDiskCommand::canAddDisk() const
 {
-    XenObjectType objectType = this->getSelectedObjectType();
-    QString objectRef = this->getSelectedRef();
     QSharedPointer<XenObject> object = this->GetObject();
-    if (!object || !object->GetConnection() || !object->GetConnection()->GetCache())
+    if (!object || !object->GetConnection())
         return false;
 
-    XenCache* cache = object->GetConnection()->GetCache();
+    XenObjectType objectType = object->GetObjectType();
 
     if (objectType == XenObjectType::SR)
     {
-        QSharedPointer<SR> sr = cache->ResolveObject<SR>(XenObjectType::SR, objectRef);
+        QSharedPointer<SR> sr = qSharedPointerDynamicCast<SR>(object);
         if (!sr)
             return false;
 
@@ -281,7 +278,7 @@ bool AddVirtualDiskCommand::canAddDisk() const
         return sr->CurrentOperations().isEmpty();
     } else if (objectType == XenObjectType::VM)
     {
-        QSharedPointer<VM> vm = cache->ResolveObject<VM>(XenObjectType::VM, objectRef);
+        QSharedPointer<VM> vm = qSharedPointerDynamicCast<VM>(object);
         if (!vm)
             return false;
 
@@ -292,44 +289,4 @@ bool AddVirtualDiskCommand::canAddDisk() const
     }
 
     return false;
-}
-
-int AddVirtualDiskCommand::getMaxVBDsAllowed(const QVariantMap& vmData) const
-{
-    // Default max is 16 VBDs for most VMs
-    // Check allowed_VBD_devices to get actual limit
-    QVariantList allowedDevices = vmData.value("allowed_VBD_devices").toList();
-    if (!allowedDevices.isEmpty())
-    {
-        return allowedDevices.size();
-    }
-
-    // Fallback: standard limit is 16 (0-15 device positions)
-    return 16;
-}
-
-int AddVirtualDiskCommand::getCurrentVBDCount(const QString& vmRef) const
-{
-    return this->getCurrentVBDCount(nullptr, vmRef);
-}
-
-int AddVirtualDiskCommand::getCurrentVBDCount(XenCache* cache, const QString& vmRef) const
-{
-    if (!cache)
-        return 0;
-
-    // Get all VBDs and count those attached to this VM
-    QList<QVariantMap> allVBDs = cache->GetAllData(XenObjectType::VBD);
-
-    int count = 0;
-    for (const QVariantMap& vbdData : allVBDs)
-    {
-        QString vbdVMRef = vbdData.value("VM").toString();
-        if (vbdVMRef == vmRef)
-        {
-            count++;
-        }
-    }
-
-    return count;
 }
