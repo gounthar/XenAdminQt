@@ -301,9 +301,8 @@ void VMStorageTabPage::populateVMStorage()
         if (!sr || !sr->IsValid())
             continue;
 
-        // Skip tools SRs
-        QString srType = sr->GetType();
-        if (srType == "udev")
+        // C# VMStoragePage skips only tools SRs.
+        if (sr->IsToolsSR())
         {
             continue;
         }
@@ -740,8 +739,8 @@ void VMStorageTabPage::updateStorageButtons()
                 anyAttached = anyAttached || currentlyAttached;
                 anyDetached = anyDetached || !currentlyAttached;
 
-                bool vbdLocked = vbd->IsLocked() || vbd->AllowedOperations().isEmpty();
-                bool vdiLocked = vdi ? (vdi->IsLocked() || vdi->AllowedOperations().isEmpty()) : true;
+                bool vbdLocked = vbd->IsLocked();
+                bool vdiLocked = vdi ? vdi->IsLocked() : true;
 
                 bool isLocked = vbdLocked || vdiLocked;
                 anyLocked = anyLocked || isLocked;
@@ -800,8 +799,8 @@ void VMStorageTabPage::updateStorageButtons()
             QSharedPointer<VBD> vbd = this->m_connection->GetCache()->ResolveObject<VBD>(vbdRef);
             QSharedPointer<VDI> vdi = vbd ? vbd->GetVDI() : QSharedPointer<VDI>();
 
-            bool vbdLocked = !vbd || vbd->IsLocked() || vbd->AllowedOperations().isEmpty();
-            bool vdiLocked = !vdi || vdi->IsLocked() || vdi->AllowedOperations().isEmpty();
+            bool vbdLocked = !vbd || vbd->IsLocked();
+            bool vdiLocked = !vdi || vdi->IsLocked();
 
             canEdit = vdi && vdi->IsValid() && !vbdLocked && !vdiLocked;
         }

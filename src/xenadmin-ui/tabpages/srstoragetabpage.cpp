@@ -339,8 +339,7 @@ void SrStorageTabPage::updateButtonStates()
     {
         QSharedPointer<VDI> vdi = this->getSelectedVDI();
         bool isSnapshot = vdi && vdi->IsSnapshot();
-        QStringList vdiAllowed = vdi ? vdi->AllowedOperations() : QStringList();
-        bool vdiLocked = vdiAllowed.isEmpty();
+        bool vdiLocked = !vdi || vdi->IsLocked();
         this->ui->editButton->setEnabled(!isSnapshot && !vdiLocked && !srLocked);
     } else
     {
