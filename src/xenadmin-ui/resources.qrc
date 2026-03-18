@@ -54,6 +54,8 @@
         <file alias="server_home_16.png">images/000_ServerHome_h32bit_16.png</file>
         <file alias="reboot_vm_16.png">images/000_RebootVM_h32bit_16.png</file>
         <file alias="alert_16.png">images/000_Alert2_h32bit_16.png</file>
+        <file alias="info.png">images/000_Alert2_h32bit_16.png</file>
+        <file alias="alert-warning.png">images/000_Alert2_h32bit_16.png</file>
         <file alias="tag_16.png">images/000_Tag_h32bit_16.png</file>
         <file alias="configure_16.png">images/002_Configure_h32bit_16.png</file>
         <file alias="patch_16.png">images/000_Patch_h32bit_16.png</file>
