@@ -434,25 +434,9 @@ void SnapshotsTabPage::onDeleteSnapshot()
 
 void SnapshotsTabPage::onRevertToSnapshot()
 {
-    QString snapshotName;
-    QString snapshotRef = this->selectedSnapshotRef(&snapshotName);
+    QString snapshotRef = this->selectedSnapshotRef();
 
     if (snapshotRef.isEmpty())
-    {
-        return;
-    }
-
-    // Confirm revert
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        "Revert to Snapshot",
-        QString("Are you sure you want to revert to snapshot '%1'?\n\n"
-                "This will restore the VM to the state when the snapshot was taken. "
-                "The current state will be lost unless you take a new snapshot first.")
-            .arg(snapshotName),
-        QMessageBox::Yes | QMessageBox::No);
-
-    if (reply != QMessageBox::Yes)
     {
         return;
     }
