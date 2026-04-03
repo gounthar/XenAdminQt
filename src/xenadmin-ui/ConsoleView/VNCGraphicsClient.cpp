@@ -301,10 +301,14 @@ void VNCGraphicsClient::Connect(QTcpSocket* stream, const QString& password, con
 void VNCGraphicsClient::onSocketDisconnected()
 {
     qDebug() << "VNCGraphicsClient: Socket disconnected";
+    const bool unexpectedDisconnect = !this->m_terminated;
     this->m_connected = false;
     this->m_state = Disconnected;
     this->m_updateTimer->stop();
     this->update();
+
+    if (unexpectedDisconnect)
+        emit errorOccurred(this, "Socket disconnected");
 }
 
 void VNCGraphicsClient::onSocketError(QAbstractSocket::SocketError error)
