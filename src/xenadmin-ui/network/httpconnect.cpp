@@ -223,7 +223,8 @@ void HTTPConnect::onReadyRead()
     this->m_responseBuffer.append(this->m_socket->readAll());
 
     // Try to parse HTTP response
-    int statusCode = this->readHttpResponse();
+    int headerBytes = -1;
+    int statusCode = this->readHttpResponse(&headerBytes);
 
     if (statusCode == 200)
     {
@@ -245,7 +246,12 @@ void HTTPConnect::onReadyRead()
         socket->disconnect(this);
         socket->setParent(nullptr);
 
-        emit connectedToConsole(socket);
+        QByteArray initialData;
+        if (headerBytes > 0 && this->m_responseBuffer.size() > headerBytes)
+            initialData = this->m_responseBuffer.mid(headerBytes);
+        this->m_responseBuffer.clear();
+
+        emit connectedToConsole(socket, initialData);
     } else if (statusCode > 0)
     {
         // Got a response but not 200 OK
@@ -254,7 +260,7 @@ void HTTPConnect::onReadyRead()
     // else statusCode == 0 means incomplete response, wait for more data
 } 
 
-int HTTPConnect::readHttpResponse()
+int HTTPConnect::readHttpResponse(int* headerBytes)
 {
     // Parse HTTP response headers from buffer
     // First line should be: HTTP/1.0 200 OK (or similar)
@@ -271,6 +277,8 @@ int HTTPConnect::readHttpResponse()
         if (lineEnd == -1)
         {
             // Incomplete line, need more data
+            if (headerBytes)
+                *headerBytes = -1;
             return 0;
         }
 
@@ -283,6 +291,8 @@ int HTTPConnect::readHttpResponse()
         {
             // End of headers - we're done
             qDebug() << "HTTPConnect: End of response headers";
+            if (headerBytes)
+                *headerBytes = pos;
             return statusCode;
         }
 
@@ -305,6 +315,8 @@ int HTTPConnect::readHttpResponse()
     }
 
     // Haven't found end of headers yet, need more data
+    if (headerBytes)
+        *headerBytes = -1;
     return 0;
 } 
 

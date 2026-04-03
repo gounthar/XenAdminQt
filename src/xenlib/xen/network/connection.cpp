@@ -289,7 +289,9 @@ Session* XenConnection::GetNewSession(const QString& hostname,
 
     for (int attempt = 0; attempt < kMaxAttempts; ++attempt)
     {
-        XenConnection* newConn = new XenConnection(this);
+        // This method can run on a worker thread; avoid parenting to `this`
+        // (which lives on another thread) to prevent cross-thread QObject warnings.
+        XenConnection* newConn = new XenConnection(nullptr);
 
         if (!newConn->ConnectToHost(hostname, port, currentUsername, currentPassword))
         {
@@ -332,6 +334,8 @@ Session* XenConnection::GetNewSession(const QString& hostname,
 
         if (session->Login(currentUsername, currentPassword))
         {
+            // When external owner destroys Session, delete newConn as well.
+            QObject::connect(session, &QObject::destroyed, newConn, &QObject::deleteLater);
             this->d->lastFailureDescription.clear();
             return session;
         }

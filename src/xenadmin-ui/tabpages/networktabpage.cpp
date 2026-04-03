@@ -27,16 +27,6 @@
 
 #include "networktabpage.h"
 #include "ui_networktabpage.h"
-#include "xenlib/xen/session.h"
-#include "xenlib/xen/vm.h"
-#include "xenlib/xen/vif.h"
-#include "xenlib/xen/network.h"
-#include "xenlib/xen/network_sriov.h"
-#include "xenlib/xen/host.h"
-#include "xenlib/xen/pool.h"
-#include "xenlib/xen/vlan.h"
-#include "xenlib/xen/vmguestmetrics.h"
-#include "xenlib/xencache.h"
 #include "../settingsmanager.h"
 #include "../dialogs/newnetworkwizard.h"
 #include "../dialogs/networkpropertiesdialog.h"
@@ -46,6 +36,17 @@
 #include "../iconmanager.h"
 #include "../mainwindow.h"
 #include "../widgets/tableclipboardutils.h"
+#include "xenlib/xen/session.h"
+#include "xenlib/xen/vm.h"
+#include "xenlib/xen/vif.h"
+#include "xenlib/xen/pif.h"
+#include "xenlib/xen/network.h"
+#include "xenlib/xen/network_sriov.h"
+#include "xenlib/xen/host.h"
+#include "xenlib/xen/pool.h"
+#include "xenlib/xen/vlan.h"
+#include "xenlib/xen/vmguestmetrics.h"
+#include "xenlib/xencache.h"
 #include "xenlib/xen/actions/vif/deletevifaction.h"
 #include "xenlib/xen/actions/vif/plugvifaction.h"
 #include "xenlib/xen/actions/vif/unplugvifaction.h"
@@ -53,7 +54,6 @@
 #include "xenlib/xen/actions/vif/updatevifaction.h"
 #include "xenlib/xen/actions/network/networkaction.h"
 #include "commands/network/destroybondcommand.h"
-#include "xen/pif.h"
 #include <QTableWidgetItem>
 #include <QMessageBox>
 #include <QDebug>
@@ -445,7 +445,7 @@ void NetworkTabPage::populateNetworksForHost()
 
         if (!shouldShowNetwork(network))
         {
-            qDebug() << "Skipping network:" << network->GetName();
+            // qDebug() << "Skipping network:" << network->GetName();
             continue;
         }
 
@@ -1351,10 +1351,7 @@ void NetworkTabPage::onRemoveNetwork()
             networkName = network->GetName();
 
         // C#: Show confirmation dialog, then use DeleteVIFAction
-        int ret = QMessageBox::question(this, tr("Remove Network Interface"),
-                                        tr("Are you sure you want to remove network interface %1 (%2)?")
-                                            .arg(device, networkName),
-                                        QMessageBox::Yes | QMessageBox::No);
+        int ret = QMessageBox::question(this, tr("Remove Network Interface"), tr("Are you sure you want to remove network interface %1 (%2)?").arg(device, networkName), QMessageBox::Yes | QMessageBox::No);
 
         if (ret == QMessageBox::Yes)
         {

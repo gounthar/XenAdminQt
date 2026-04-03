@@ -1572,7 +1572,7 @@ void MainWindow::saveSettings()
     settings.SetExpandedTreeItems(expandedItems);
 
     settings.Sync();
-    qDebug() << "Settings saved to:" << settings.GetValue("").toString();
+    qDebug() << "Settings saved to:" << settings.GetFileName();
 }
 
 bool MainWindow::IsConnected()
@@ -1619,7 +1619,7 @@ void MainWindow::loadSettings()
         this->updateViewMenu(this->m_navigationPane->GetCurrentMode());
     }
 
-    qDebug() << "Settings loaded from:" << settings.GetValue("").toString();
+    qDebug() << "Settings loaded from:" << settings.GetFileName();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)

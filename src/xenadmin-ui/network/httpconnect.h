@@ -34,6 +34,7 @@
 #include <QUrl>
 #include <QTimer>
 #include <QPointer>
+#include <QByteArray>
 
 /**
  * @brief HTTPConnect class - Implements HTTP CONNECT tunneling for XenServer console access
@@ -80,7 +81,7 @@ class HTTPConnect : public QObject
          *
          * The receiver takes ownership of the socket and must delete it when done.
          */
-        void connectedToConsole(QSslSocket* socket);
+        void connectedToConsole(QSslSocket* socket, const QByteArray& initialData);
 
         /**
          * @brief Emitted on connection error
@@ -104,7 +105,7 @@ class HTTPConnect : public QObject
          * @brief Read and parse HTTP response headers
          * @return HTTP status code (200 = success), or 0 if incomplete
          */
-        int readHttpResponse();
+        int readHttpResponse(int* headerBytes = nullptr);
 
         /**
          * @brief Cleanup and emit error

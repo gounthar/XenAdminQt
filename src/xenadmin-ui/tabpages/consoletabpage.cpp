@@ -36,11 +36,7 @@
  */
 ConsoleTabPage::ConsoleTabPage(QWidget* parent) : BaseTabPage(parent), ui(new Ui::ConsoleTabPage), m_consolePanel(nullptr)
 {
-    qDebug() << "ConsoleTabPage: Constructor";
-
     this->ui->setupUi(this);
-
-    qDebug() << "ConsoleTabPage: Constructor complete";
 }
 
 /**
@@ -48,10 +44,7 @@ ConsoleTabPage::ConsoleTabPage(QWidget* parent) : BaseTabPage(parent), ui(new Ui
  */
 ConsoleTabPage::~ConsoleTabPage()
 {
-    qDebug() << "ConsoleTabPage: Destructor";
-
     // ConsolePanel is owned by MainWindow, don't delete it here
-
     delete this->ui;
 }
 
@@ -71,8 +64,6 @@ bool ConsoleTabPage::IsApplicableForObjectType(XenObjectType objectType) const
  */
 void ConsoleTabPage::SetConsolePanel(ConsolePanel* consolePanel)
 {
-    qDebug() << "ConsoleTabPage: setConsolePanel()";
-
     if (this->m_consolePanel == consolePanel)
         return;
 

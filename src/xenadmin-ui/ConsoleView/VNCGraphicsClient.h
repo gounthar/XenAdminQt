@@ -92,30 +92,31 @@ class VNCGraphicsClient : public QWidget, public IRemoteConsole
         QRect ConsoleBounds() const override;
 
         // Connection management (matches C# Connect/Disconnect)
-        void connect(QTcpSocket* stream, const QString& password);
-        bool connected() const
+        void Connect(QTcpSocket* stream, const QString& password, const QByteArray& initialData = QByteArray());
+        bool IsConnected() const
         {
-            return _connected;
+            return m_connected;
         }
-        bool terminated() const
+        bool IsTerminated() const
         {
-            return _terminated;
+            return m_terminated;
         }
 
         // Source mode (text console)
-        void setUseSource(bool value)
+        void SetUseSource(bool value)
         {
-            _useSource = value;
+            m_useSource = value;
         }
-        bool useSource() const
+
+        bool GetUseSource() const
         {
-            return _useSource;
+            return m_useSource;
         }
 
         // QEMU extended key encoding
-        void setUseQemuExtKeyEncoding(bool value)
+        void SetUseQemuExtKeyEncoding(bool value)
         {
-            _useQemuExtKeyEncoding = value;
+            m_useQemuExtKeyEncoding = value;
         }
 
     signals:
@@ -196,9 +197,9 @@ class VNCGraphicsClient : public QWidget, public IRemoteConsole
         QByteArray readBytes(int count);
 
         // Network state
-        QTcpSocket* _vncStream; // Matches C# _vncStream (but QTcpSocket instead of VNCStream)
-        volatile bool _connected;
-        volatile bool _terminated;
+        QTcpSocket* m_vncStream = nullptr; // Matches C# _vncStream (but QTcpSocket instead of VNCStream)
+        volatile bool m_connected = false;
+        volatile bool m_terminated = false;
         enum State
         {
             Disconnected,
@@ -208,60 +209,59 @@ class VNCGraphicsClient : public QWidget, public IRemoteConsole
             Initialization,
             Normal
         };
-        State _state;
-        int _protocolMinorVersion; // RFB protocol minor version (3 for 3.3, 7 for 3.7, 8 for 3.8)
-        QByteArray _readBuffer;
-        QString _password;
+        State m_state = State::Disconnected;
+        int m_protocolMinorVersion = 8; // RFB protocol minor version (3 for 3.3, 7 for 3.7, 8 for 3.8)
+        QByteArray m_readBuffer;
+        QString m_password;
 
         // Rendering state (matches C# fields with exact names)
-        QImage _backBuffer;          // Matches C# Bitmap _backBuffer
-        QMutex _backBufferMutex;     // Protects _backBuffer access
-        bool _backBufferInteresting; // Matches C# _backBufferInteresting
-        QRect _damage;               // Matches C# Rectangle _damage
+        QImage m_backBuffer;          // Matches C# Bitmap _backBuffer
+        QMutex m_backBufferMutex;     // Protects _backBuffer access
+        bool m_backBufferInteresting = false; // Matches C# _backBufferInteresting
+        QRect m_damage;               // Matches C# Rectangle _damage
 
         // Graphics (C# has _backGraphics and _frontGraphics, Qt uses QPainter)
         // We'll create QPainter instances on-demand instead of storing them
 
         // Scaling state (matches C# fields)
-        bool _scaling;
-        float _scale;
-        float _dx, _dy; // Translation offsets
-        float _oldDx, _oldDy;
-        int _bump; // For damage inflation
+        bool m_scaling = true;
+        float m_scale = 1.0f;
+        float m_dx = 0.0f, m_dy = 0.0f; // Translation offsets
+        int m_bump = 0; // For damage inflation
 
         // Input state (matches C# fields)
-        bool _sendScanCodes;
-        bool _useSource; // Text console mode
-        bool _displayBorder;
-        bool _useQemuExtKeyEncoding;
-        QSet<Qt::Key> _pressedKeys;
-        QSet<int> _pressedScans;
-        int _currentMouseState;
-        int _mouseMoved;
-        int _mouseNotMoved;
-        QMouseEvent* _pending;
-        int _pendingState;
-        int _lastState;
-        bool _modifierKeyPressedAlone;
+        bool m_sendScanCodes = true;
+        bool m_useSource = false; // Text console mode
+        bool m_displayBorder = true;
+        bool m_useQemuExtKeyEncoding = false;
+        QSet<Qt::Key> m_pressedKeys;
+        QSet<int> m_pressedScans;
+        int m_currentMouseState = 0;
+        int m_mouseMoved = 0;
+        int m_mouseNotMoved = 0;
+        QMouseEvent* m_pending = nullptr;
+        int m_pendingState = 0;
+        int m_lastState = 0;
+        bool m_modifierKeyPressedAlone = false;
 
         // Clipboard state (matches C# fields)
-        QString _clipboardStash;
-        bool _updateClipboardOnFocus;
-        static bool _handlingChange;
+        QString m_clipboardStash;
+        bool m_updateClipboardOnFocus = false;
+        static bool m_handlingChange;
 
         // Keyboard handler
-        ConsoleKeyHandler* _keyHandler;
+        ConsoleKeyHandler* m_keyHandler = nullptr;
 
         // Pause state
-        bool _helperIsPaused;
+        bool m_helperIsPaused = true;
 
         // Update timer
-        QTimer* _updateTimer;
+        QTimer* m_updateTimer;
 
         // Framebuffer info
-        int _fbWidth;
-        int _fbHeight;
-        QString _desktopName;
+        int m_fbWidth = 640;
+        int m_fbHeight = 480;
+        QString m_desktopName;
 
         // Pixel format
         struct
@@ -276,7 +276,7 @@ class VNCGraphicsClient : public QWidget, public IRemoteConsole
             quint8 redShift;
             quint8 greenShift;
             quint8 blueShift;
-        } _pixelFormat;
+        } m_pixelFormat;
 };
 
 #endif // VNCGRAPHICSCLIENT_H

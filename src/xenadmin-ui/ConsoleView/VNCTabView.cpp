@@ -163,7 +163,7 @@ VNCTabView::VNCTabView(VNCView* parent, QSharedPointer<VM> vm, const QString& el
     this->m_vncScreen->onDetectRDP = [this]() { onDetectRDP(); };
     this->m_vncScreen->onDetectVNC = [this]() { onDetectVNC(); };
 
-    this->showGpuWarningIfRequired(this->m_vncScreen->mustConnectRemoteDesktop());
+    this->showGpuWarningIfRequired(this->m_vncScreen->MustConnectRemoteDesktop());
 
     // Check if control domain or Linux HVM (no RDP)
     // Reference: XenAdmin/ConsoleView/VNCTabView.cs line 171
@@ -189,7 +189,7 @@ VNCTabView::VNCTabView(VNCView* parent, QSharedPointer<VM> vm, const QString& el
     }
 
     // Get last desktop size
-    this->m_lastDesktopSize = this->m_vncScreen->desktopSize();
+    this->m_lastDesktopSize = this->m_vncScreen->GetDesktopSize();
 
     // Create INS key timer
     this->m_insKeyTimer = new QTimer(this);
@@ -243,7 +243,7 @@ VNCTabView::VNCTabView(VNCView* parent, QSharedPointer<VM> vm, const QString& el
     bool autoSwitchToRDP = settings.GetConsoleAutoSwitchToRDP();
     if (autoSwitchToRDP && this->hasRDP(vm))
     {
-        this->m_vncScreen->setAutoSwitchRDPLater(true);
+        this->m_vncScreen->SetAutoSwitchRDPLater(true);
         qDebug() << "VNCTabView: Auto-switch to RDP enabled";
     }
 
@@ -310,7 +310,7 @@ void VNCTabView::Pause()
 {
     qDebug() << "VNCTabView: pause()";
     if (this->m_vncScreen)
-        this->m_vncScreen->pause();
+        this->m_vncScreen->Pause();
 }
 
 void VNCTabView::Unpause()
@@ -321,7 +321,7 @@ void VNCTabView::Unpause()
     this->updatePowerState();
 
     if (this->m_vncScreen)
-        this->m_vncScreen->unpause();
+        this->m_vncScreen->Unpause();
 }
 
 void VNCTabView::DisableToggleVNCButton()
@@ -419,7 +419,7 @@ void VNCTabView::MaybeScale()
     if (!this->m_vncScreen)
         return;
 
-    QSize desktopSize = this->m_vncScreen->desktopSize();
+    QSize desktopSize = this->m_vncScreen->GetDesktopSize();
     int contentWidth = this->ui->contentPanel->width();
 
     SettingsManager& settings = SettingsManager::instance();
@@ -456,7 +456,7 @@ QSize VNCTabView::GrowToFit()
     if (!this->m_vncScreen)
         return QSize(640, 480);
 
-    QSize desktopSize = this->m_vncScreen->desktopSize();
+    QSize desktopSize = this->m_vncScreen->GetDesktopSize();
 
     // Calculate total size including toolbars
     int toolbarHeight = this->ui->gradientPanel->height() + this->ui->bottomToolbar->height();
@@ -551,12 +551,12 @@ void VNCTabView::onGuestMetricsPropertyChanged(const QString& propertyName)
         {
             // RDP is enabled - maybe auto-switch
             // C#: if (vncScreen.UseVNC && (tryToConnectRDP || (!vncScreen.UserWantsToSwitchProtocol && AutoSwitchToRDP)))
-            if (this->m_vncScreen && this->m_vncScreen->useVNC())
+            if (this->m_vncScreen && this->m_vncScreen->GetUseVNC())
             {
                 SettingsManager& settings = SettingsManager::instance();
                 bool autoSwitch = settings.GetConsoleAutoSwitchToRDP();
 
-                if (this->m_tryToConnectRDP || (!this->m_vncScreen->userWantsToSwitchProtocol() && autoSwitch))
+                if (this->m_tryToConnectRDP || (!this->m_vncScreen->GetUserWantsToSwitchProtocol() && autoSwitch))
                 {
                     this->m_tryToConnectRDP = false;
 
@@ -609,7 +609,7 @@ void VNCTabView::onSendCADClicked()
     qDebug() << "VNCTabView: onSendCADClicked()";
 
     if (this->m_vncScreen)
-        this->m_vncScreen->sendCAD();
+        this->m_vncScreen->SendCAD();
 }
 
 void VNCTabView::onSendSpecialAltFn(int functionNumber)
@@ -631,13 +631,13 @@ void VNCTabView::SendCAD()
     qDebug() << "VNCTabView: sendCAD()";
 
     if (this->m_vncScreen)
-        this->m_vncScreen->sendCAD();
+        this->m_vncScreen->SendCAD();
 }
 
 QImage VNCTabView::Snapshot() const
 {
     if (this->m_vncScreen)
-        return this->m_vncScreen->snapshot();
+        return this->m_vncScreen->GetSnapshot();
     return QImage();
 }
 
@@ -658,7 +658,7 @@ void VNCTabView::onScaleCheckBoxChanged(bool checked)
 
         if (this->m_vncScreen)
         {
-            this->m_vncScreen->setScaling(checked);
+            this->m_vncScreen->SetScaling(checked);
         }
     } catch (...)
     {
@@ -709,16 +709,16 @@ void VNCTabView::onToggleConsoleButtonClicked()
             qDebug() << "VNCTabView: Switching to RDP";
 
             // C#: if (vncScreen.UseVNC) oldScaleValue = scaleCheckBox.Checked;
-            if (this->m_vncScreen->useVNC())
+            if (this->m_vncScreen->GetUseVNC())
             {
                 this->m_oldScaleValue = this->ui->scaleCheckBox->isChecked();
             }
 
             // C#: vncScreen.UseVNC = !vncScreen.UseVNC;
-            this->m_vncScreen->setUseVNC(!this->m_vncScreen->useVNC());
+            this->m_vncScreen->SetUseVNC(!this->m_vncScreen->GetUseVNC());
 
             // C#: vncScreen.UserWantsToSwitchProtocol = true;
-            this->m_vncScreen->setUserWantsToSwitchProtocol(true);
+            this->m_vncScreen->SetUserWantsToSwitchProtocol(true);
 
             // C#: if (CanEnableRDP()) { show dialog to enable RDP }
             if (canEnableRDP())
@@ -749,7 +749,7 @@ void VNCTabView::onToggleConsoleButtonClicked()
 
             // C#: if (vncScreen.RdpIp == null) toggleConsoleButton.Enabled = false;
             // Disable button until RDP connection is established
-            if (this->m_vncScreen->rdpIp().isEmpty())
+            if (this->m_vncScreen->GetRDPIp().isEmpty())
             {
                 this->ui->toggleConsoleButton->setEnabled(false);
             }
@@ -767,7 +767,7 @@ void VNCTabView::onToggleConsoleButtonClicked()
 
             // C#: vncScreen.UseSource = !vncScreen.UseSource;
             // Note: UseSource property not yet ported, so we toggle UseVNC instead
-            this->m_vncScreen->setUseVNC(!this->m_vncScreen->useVNC());
+            this->m_vncScreen->SetUseVNC(!this->m_vncScreen->GetUseVNC());
         }
 
         // C#: Unpause();
@@ -1008,7 +1008,7 @@ void VNCTabView::onDetectRDP()
         
         // Auto-switch to RDP if setting enabled and user hasn't manually switched
         // C#: if (!vncScreen.UserWantsToSwitchProtocol && Properties.Settings.Default.AutoSwitchToRDP)
-        if (this->m_vncScreen && !this->m_vncScreen->userWantsToSwitchProtocol())
+        if (this->m_vncScreen && !this->m_vncScreen->GetUserWantsToSwitchProtocol())
         {
             SettingsManager& settings = SettingsManager::instance();
             bool autoSwitchToRDP = settings.GetConsoleAutoSwitchToRDP();
@@ -1459,7 +1459,7 @@ void VNCTabView::maybeEnableButton()
 
     // C#: if (vncScreen != null && (!vncScreen.UseVNC || !vncScreen.UseSource))
     // UseSource property not yet ported, so just check UseVNC
-    if (this->m_vncScreen && !this->m_vncScreen->useVNC())
+    if (this->m_vncScreen && !this->m_vncScreen->GetUseVNC())
     {
         this->ui->toggleConsoleButton->setEnabled(true);
     }
@@ -1695,7 +1695,7 @@ void VNCTabView::updateButtons()
     //         : UseStandardDesktop;
     if (rdp)
     {
-        if (this->m_vncScreen->useVNC())
+        if (this->m_vncScreen->GetUseVNC())
         {
             // Using VNC, button should switch to RDP
             this->ui->toggleConsoleButton->setText(canEnableRDP() ? tr("Enable Remote Desktop") : tr("Switch to Remote Desktop"));
@@ -1709,18 +1709,18 @@ void VNCTabView::updateButtons()
         // Text console mode (XVNC)
         // C#: toggleConsoleButton.Text = vncScreen.UseSource ? UseXVNC : UseVNC;
         // UseSource not ported yet, so just show VNC label
-        this->ui->toggleConsoleButton->setText(this->m_vncScreen->useVNC() ? tr("Switch to Text Console") : tr("Switch to Graphical Console"));
+        this->ui->toggleConsoleButton->setText(this->m_vncScreen->GetUseVNC() ? tr("Switch to Text Console") : tr("Switch to Graphical Console"));
     }
 
     // C#: UpdateTooltipOfToggleButton();
     updateTooltipOfToggleButton();
 
     // C#: scaleCheckBox.Visible = !rdp || vncScreen.UseVNC;
-    this->ui->scaleCheckBox->setVisible(!rdp || this->m_vncScreen->useVNC());
+    this->ui->scaleCheckBox->setVisible(!rdp || this->m_vncScreen->GetUseVNC());
 
     // C#: sendCAD.Enabled = !rdp || vncScreen.UseVNC;
-    this->ui->sendCADButton->setEnabled(!rdp || this->m_vncScreen->useVNC());
-    this->ui->specialKeysButton->setEnabled(!rdp || this->m_vncScreen->useVNC());
+    this->ui->sendCADButton->setEnabled(!rdp || this->m_vncScreen->GetUseVNC());
+    this->ui->specialKeysButton->setEnabled(!rdp || this->m_vncScreen->GetUseVNC());
 
     // C#: FocusVNC();
     // Focus the VNC screen widget
@@ -1730,7 +1730,7 @@ void VNCTabView::updateButtons()
     // C#: ignoreScaleChange = true;
     // C#: scaleCheckBox.Checked = (!rdp || vncScreen.UseVNC) ? (scaleCheckBox.Checked = oldScaleValue) : false;
     m_ignoreScaleChange = true;
-    if (!rdp || this->m_vncScreen->useVNC())
+    if (!rdp || this->m_vncScreen->GetUseVNC())
     {
         this->ui->scaleCheckBox->setChecked(this->m_oldScaleValue);
     } else
@@ -1765,7 +1765,7 @@ void VNCTabView::sendSpecialFunctionKey(bool ctrl, bool alt, int functionNumber)
     if (!this->m_vncScreen || functionNumber < 1 || functionNumber > 12)
         return;
 
-    this->m_vncScreen->sendFunctionKeyWithModifiers(ctrl, alt, functionNumber);
+    this->m_vncScreen->SendFunctionKeyWithModifiers(ctrl, alt, functionNumber);
 }
 
 QString VNCTabView::guessNativeConsoleLabel() const
@@ -1848,7 +1848,7 @@ bool VNCTabView::desktopSizeHasChanged()
     if (!this->m_vncScreen)
         return false;
 
-    QSize currentSize = this->m_vncScreen->desktopSize();
+    QSize currentSize = this->m_vncScreen->GetDesktopSize();
 
     if (currentSize != m_lastDesktopSize)
     {
@@ -1883,7 +1883,7 @@ void VNCTabView::cancelWaitForInsKeyAndSendCAD()
     // TODO: Hide fullscreen hint
 
     if (this->m_vncScreen)
-        this->m_vncScreen->sendCAD();
+        this->m_vncScreen->SendCAD();
 }
 
 void VNCTabView::updateTooltipOfToggleButton()
@@ -1988,7 +1988,7 @@ void VNCTabView::showOrHideRdpVersionWarning()
 
     // C#: Lines 220-223
 
-    bool showWarning = this->m_vncScreen && this->m_vncScreen->rdpVersionWarningNeeded();
+    bool showWarning = this->m_vncScreen && this->m_vncScreen->IsRDPVersionWarningNeeded();
 
     ui->rdpWarningIcon->setVisible(showWarning);
     ui->rdpWarningLabel->setVisible(showWarning);
@@ -2076,11 +2076,11 @@ void VNCTabView::toggleConsoleFocus()
         if (this->m_vncScreen->hasFocus())
         {
             // Console is focused - capture keyboard and mouse
-            this->m_vncScreen->captureKeyboardAndMouse();
+            this->m_vncScreen->CaptureKeyboardAndMouse();
         } else
         {
             // Console is not focused - release keyboard and mouse
-            this->m_vncScreen->uncaptureKeyboardAndMouse();
+            this->m_vncScreen->UncaptureKeyboardAndMouse();
             this->m_vncScreen->update(); // C# Refresh() → Qt update()
         }
     }

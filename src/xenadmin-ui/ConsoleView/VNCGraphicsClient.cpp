@@ -37,12 +37,9 @@
 #include <QDebug>
 
 // Static member initialization
-bool VNCGraphicsClient::_handlingChange = false;
+bool VNCGraphicsClient::m_handlingChange = false;
 
-VNCGraphicsClient::VNCGraphicsClient(QWidget* parent)
-    : QWidget(parent), _vncStream(nullptr), _connected(false), _terminated(false), _state(Disconnected), _protocolMinorVersion(8) // Default to RFB 3.8, will be set during handshake
-      ,
-      _backBufferInteresting(false), _scaling(true), _scale(1.0f), _dx(0.0f), _dy(0.0f), _oldDx(0.0f), _oldDy(0.0f), _bump(0), _sendScanCodes(true), _useSource(false), _displayBorder(true), _useQemuExtKeyEncoding(false), _currentMouseState(0), _mouseMoved(0), _mouseNotMoved(0), _pending(nullptr), _pendingState(0), _lastState(0), _modifierKeyPressedAlone(false), _updateClipboardOnFocus(false), _keyHandler(nullptr), _helperIsPaused(true), _fbWidth(640), _fbHeight(480)
+VNCGraphicsClient::VNCGraphicsClient(QWidget* parent) : QWidget(parent)
 {
     // NOTE: Don't enable mouse tracking or set focus policy here!
     // These will be enabled when we successfully connect (see connectToHost)
@@ -53,17 +50,16 @@ VNCGraphicsClient::VNCGraphicsClient(QWidget* parent)
     this->setAttribute(Qt::WA_NoSystemBackground, false); // Opaque = false in C#
 
     // Initialize back buffer (matches C# constructor)
-    this->_backBuffer = QImage(640, 480, QImage::Format_RGB32);
-    this->_backBuffer.fill(this->palette().color(QPalette::Window));
+    this->m_backBuffer = QImage(640, 480, QImage::Format_RGB32);
+    this->m_backBuffer.fill(this->palette().color(QPalette::Window));
 
     // Periodic framebuffer update requests
-    this->_updateTimer = new QTimer(this);
-    this->_updateTimer->setInterval(40); // 25 FPS
-    QObject::connect(this->_updateTimer, &QTimer::timeout, this, &VNCGraphicsClient::requestFramebufferUpdate);
+    this->m_updateTimer = new QTimer(this);
+    this->m_updateTimer->setInterval(40); // 25 FPS
+    QObject::connect(this->m_updateTimer, &QTimer::timeout, this, &VNCGraphicsClient::requestFramebufferUpdate);
 
     // Clipboard synchronization
-    QObject::connect(QApplication::clipboard(), &QClipboard::dataChanged,
-                     this, &VNCGraphicsClient::onClipboardChanged);
+    QObject::connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &VNCGraphicsClient::onClipboardChanged);
 
     qDebug() << "VNCGraphicsClient: Initialized with 640x480 backbuffer";
 }
@@ -71,13 +67,12 @@ VNCGraphicsClient::VNCGraphicsClient(QWidget* parent)
 VNCGraphicsClient::~VNCGraphicsClient()
 {
     // Disconnect clipboard (matches C# Dispose)
-    this->disconnect(QApplication::clipboard(), &QClipboard::dataChanged,
-               this, &VNCGraphicsClient::onClipboardChanged);
+    this->disconnect(QApplication::clipboard(), &QClipboard::dataChanged, this, &VNCGraphicsClient::onClipboardChanged);
 
     this->DisconnectAndDispose();
 
     // Cleanup back buffer (matches C# lock(_backBuffer) block in Dispose)
-    QMutexLocker locker(&this->_backBufferMutex);
+    QMutexLocker locker(&this->m_backBufferMutex);
     // _backBuffer is automatically cleaned up by QImage destructor
 }
 
@@ -87,18 +82,18 @@ VNCGraphicsClient::~VNCGraphicsClient()
 
 ConsoleKeyHandler* VNCGraphicsClient::KeyHandler() const
 {
-    return this->_keyHandler;
+    return this->m_keyHandler;
 }
 
 void VNCGraphicsClient::SetKeyHandler(ConsoleKeyHandler* handler)
 {
-    this->_keyHandler = handler;
+    this->m_keyHandler = handler;
 }
 
 void VNCGraphicsClient::Activate()
 {
     // Only grab focus if we're actually connected
-    if (this->_connected && this->_state == Normal)
+    if (this->m_connected && this->m_state == Normal)
     {
         this->setFocus();
         this->raise();
@@ -108,117 +103,117 @@ void VNCGraphicsClient::Activate()
 void VNCGraphicsClient::DisconnectAndDispose()
 {
     // Matches C# Disconnect() method
-    this->_connected = false;
-    this->_terminated = true;
+    this->m_connected = false;
+    this->m_terminated = true;
 
     // Disable mouse tracking and focus when disconnecting
     this->setMouseTracking(false);
     this->setFocusPolicy(Qt::NoFocus);
 
-    if (this->_vncStream)
+    if (this->m_vncStream)
     {
-        disconnect(this->_vncStream, nullptr, this, nullptr);
-        this->_vncStream->close();
+        disconnect(this->m_vncStream, nullptr, this, nullptr);
+        this->m_vncStream->close();
 
         // Transfer ownership and schedule deletion
-        QTcpSocket* stream = this->_vncStream;
-        this->_vncStream = nullptr;
+        QTcpSocket* stream = this->m_vncStream;
+        this->m_vncStream = nullptr;
         stream->deleteLater();
     }
 
-    this->_updateTimer->stop();
+    this->m_updateTimer->stop();
 
     {
-        QMutexLocker locker(&this->_backBufferMutex);
-        this->_backBuffer.fill(Qt::black);
-        this->_backBufferInteresting = false;
-        this->_damage = QRect();
+        QMutexLocker locker(&this->m_backBufferMutex);
+        this->m_backBuffer.fill(Qt::black);
+        this->m_backBufferInteresting = false;
+        this->m_damage = QRect();
     }
 
-    update();
+    this->update();
 }
 
 void VNCGraphicsClient::Pause()
 {
     // Matches C# Pause() in IRemoteConsole
-    this->_helperIsPaused = true;
-    this->_updateTimer->stop();
+    this->m_helperIsPaused = true;
+    this->m_updateTimer->stop();
 }
 
 void VNCGraphicsClient::Unpause()
 {
     // Matches C# UnPause() in IRemoteConsole
-    this->_helperIsPaused = false;
-    if (this->_connected && this->_state == Normal)
+    this->m_helperIsPaused = false;
+    if (this->m_connected && this->m_state == Normal)
     {
-        this->_updateTimer->start();
+        this->m_updateTimer->start();
     }
-    update();
+    this->update();
 }
 
 void VNCGraphicsClient::SendCAD()
 {
     // Matches C# SendCAD() method
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
-    qDebug() << "VNCGraphicsClient: Sending Ctrl+Alt+Delete";
+    // qDebug() << "VNCGraphicsClient: Sending Ctrl+Alt+Delete";
 
     // Send Ctrl down, Alt down, Delete down, Delete up, Alt up, Ctrl up
     // X11 Keysyms: XK_Control_L = 0xffe3, XK_Alt_L = 0xffe9, XK_Delete = 0xffff
-    sendKeyEvent(0xFFE3, true);  // Left Control down
-    sendKeyEvent(0xFFE9, true);  // Left Alt down
-    sendKeyEvent(0xFFFF, true);  // Delete down
-    sendKeyEvent(0xFFFF, false); // Delete up
-    sendKeyEvent(0xFFE9, false); // Left Alt up
-    sendKeyEvent(0xFFE3, false); // Left Control up
+    this->sendKeyEvent(0xFFE3, true);  // Left Control down
+    this->sendKeyEvent(0xFFE9, true);  // Left Alt down
+    this->sendKeyEvent(0xFFFF, true);  // Delete down
+    this->sendKeyEvent(0xFFFF, false); // Delete up
+    this->sendKeyEvent(0xFFE9, false); // Left Alt up
+    this->sendKeyEvent(0xFFE3, false); // Left Control up
 }
 
 void VNCGraphicsClient::SendFunctionKeyWithModifiers(bool ctrl, bool alt, int functionNumber)
 {
-    if (!this->_connected || functionNumber < 1 || functionNumber > 12)
+    if (!this->m_connected || functionNumber < 1 || functionNumber > 12)
         return;
 
     // X11 keysyms: F1..F12 are contiguous from 0xFFBE.
     const quint32 functionKeysym = 0xFFBE + static_cast<quint32>(functionNumber - 1);
 
     if (ctrl)
-        sendKeyEvent(0xFFE3, true); // Left Control down
+        this->sendKeyEvent(0xFFE3, true); // Left Control down
     if (alt)
-        sendKeyEvent(0xFFE9, true); // Left Alt down
+        this->sendKeyEvent(0xFFE9, true); // Left Alt down
 
-    sendKeyEvent(functionKeysym, true);
-    sendKeyEvent(functionKeysym, false);
+    this->sendKeyEvent(functionKeysym, true);
+    this->sendKeyEvent(functionKeysym, false);
 
     if (alt)
-        sendKeyEvent(0xFFE9, false); // Left Alt up
+        this->sendKeyEvent(0xFFE9, false); // Left Alt up
     if (ctrl)
-        sendKeyEvent(0xFFE3, false); // Left Control up
+        this->sendKeyEvent(0xFFE3, false); // Left Control up
 }
 
 QImage VNCGraphicsClient::Snapshot()
 {
     // Matches C# Snapshot() method
-    QMutexLocker locker(&this->_backBufferMutex);
-    return this->_backBuffer.copy();
+    QMutexLocker locker(&this->m_backBufferMutex);
+    return this->m_backBuffer.copy();
 }
 
 void VNCGraphicsClient::SetSendScanCodes(bool value)
 {
-    this->_sendScanCodes = value;
+    this->m_sendScanCodes = value;
 }
 
 bool VNCGraphicsClient::IsScaling() const
 {
-    return this->_scaling;
+    return this->m_scaling;
 }
 
 void VNCGraphicsClient::SetScaling(bool value)
 {
     // Matches C# Scaling property setter
-    if (this->_scaling != value)
+    if (this->m_scaling != value)
     {
-        this->_scaling = value;
+        this->m_scaling = value;
         updateScale();
         update();
     }
@@ -226,14 +221,14 @@ void VNCGraphicsClient::SetScaling(bool value)
 
 void VNCGraphicsClient::SetDisplayBorder(bool value)
 {
-    this->_displayBorder = value;
+    this->m_displayBorder = value;
     update();
 }
 
 QSize VNCGraphicsClient::DesktopSize() const
 {
     // Matches C# DesktopSize property
-    return QSize(this->_fbWidth, this->_fbHeight);
+    return QSize(this->m_fbWidth, this->m_fbHeight);
 }
 
 void VNCGraphicsClient::SetDesktopSize(const QSize& size)
@@ -253,72 +248,72 @@ QRect VNCGraphicsClient::ConsoleBounds() const
 // Connection Management (matches C# Connect/Disconnect)
 //=============================================================================
 
-void VNCGraphicsClient::connect(QTcpSocket* stream, const QString& password)
+void VNCGraphicsClient::Connect(QTcpSocket* stream, const QString& password, const QByteArray& initialData)
 {
     // Matches C# Connect(Stream stream, char[] password)
     qDebug() << "VNCGraphicsClient: Starting VNC connection";
 
     // C# checks: if (Connected || Terminated) close and reconnect
     // We should only refuse if already actively connected, not if terminated
-    if (this->_connected && this->_vncStream)
+    if (this->m_connected && this->m_vncStream)
     {
         qDebug() << "VNCGraphicsClient: Already connected, disconnecting first";
-        DisconnectAndDispose();
+        this->DisconnectAndDispose();
     }
 
     // Reset all connection state (matches C# starting fresh connection)
-    this->_terminated = false;
-    this->_connected = false; // Will set to true after setup
-    this->_vncStream = stream;
-    this->_vncStream->setParent(this);
-    this->_password = password;
-    this->_state = ProtocolVersion;
-    this->_readBuffer.clear();
+    this->m_terminated = false;
+    this->m_connected = false; // Will set to true after setup
+    this->m_vncStream = stream;
+    this->m_vncStream->setParent(this);
+    this->m_password = password;
+    this->m_state = ProtocolVersion;
+    this->m_readBuffer.clear();
+    if (!initialData.isEmpty())
+        this->m_readBuffer.append(initialData);
 
     // Clear back buffer (prevents stale imagery from previous session)
     {
-        QMutexLocker locker(&this->_backBufferMutex);
-        this->_backBuffer.fill(Qt::black);
-        this->_backBufferInteresting = false;
-        this->_damage = QRect(); // Reset damage rect to null
+        QMutexLocker locker(&this->m_backBufferMutex);
+        this->m_backBuffer.fill(Qt::black);
+        this->m_backBufferInteresting = false;
+        this->m_damage = QRect(); // Reset damage rect to null
     }
 
     // Force widget to repaint with cleared backbuffer (C# equivalently shows black before first frame)
-    update();
+    this->update();
 
     // Connect socket signals
-    QObject::connect(this->_vncStream, &QTcpSocket::readyRead,
-                     this, &VNCGraphicsClient::onSocketReadyRead);
-    QObject::connect(this->_vncStream, &QTcpSocket::disconnected,
-                     this, &VNCGraphicsClient::onSocketDisconnected);
-    QObject::connect(this->_vncStream, &QTcpSocket::errorOccurred,
-                     this, &VNCGraphicsClient::onSocketError);
+    QObject::connect(this->m_vncStream, &QTcpSocket::readyRead, this, &VNCGraphicsClient::onSocketReadyRead);
+    QObject::connect(this->m_vncStream, &QTcpSocket::disconnected, this, &VNCGraphicsClient::onSocketDisconnected);
+    QObject::connect(this->m_vncStream, &QTcpSocket::errorOccurred, this, &VNCGraphicsClient::onSocketError);
 
-    this->_connected = true;
+    this->m_connected = true;
 
-    // If socket already has data, process it
-    if (this->_vncStream->bytesAvailable() > 0)
+    // Process immediately if caller provided pre-read bytes (e.g. bytes read by HTTP CONNECT)
+    // or if socket already has new data available.
+    if (!this->m_readBuffer.isEmpty() || this->m_vncStream->bytesAvailable() > 0)
     {
-        onSocketReadyRead();
+        this->onSocketReadyRead();
     }
 }
 
 void VNCGraphicsClient::onSocketDisconnected()
 {
     qDebug() << "VNCGraphicsClient: Socket disconnected";
-    this->_connected = false;
-    this->_state = Disconnected;
-    this->_updateTimer->stop();
-    update();
+    this->m_connected = false;
+    this->m_state = Disconnected;
+    this->m_updateTimer->stop();
+    this->update();
 }
 
 void VNCGraphicsClient::onSocketError(QAbstractSocket::SocketError error)
 {
     Q_UNUSED(error);
-    QString errorStr = this->_vncStream ? this->_vncStream->errorString() : "Unknown error";
+    QString errorStr = this->m_vncStream ? this->m_vncStream->errorString() : "Unknown error";
     qWarning() << "VNCGraphicsClient: Socket error:" << errorStr;
 
-    this->_connected = false;
+    this->m_connected = false;
     emit errorOccurred(this, errorStr);
 }
 
@@ -328,72 +323,72 @@ void VNCGraphicsClient::onSocketError(QAbstractSocket::SocketError error)
 
 void VNCGraphicsClient::onSocketReadyRead()
 {
-    this->_readBuffer.append(this->_vncStream->readAll());
+    this->m_readBuffer.append(this->m_vncStream->readAll());
 
     // Process all available data through state machine
-    while (!this->_readBuffer.isEmpty() && this->_connected)
+    while (!this->m_readBuffer.isEmpty() && this->m_connected)
     {
-        switch (this->_state)
+        switch (this->m_state)
         {
-        case Disconnected:
-            return; // Nothing to process when disconnected
+            case Disconnected:
+                return; // Nothing to process when disconnected
 
-        case ProtocolVersion:
-            handleProtocolVersion();
-            break;
-        case SecurityHandshake:
-            handleSecurityHandshake();
-            break;
-        case SecurityResult:
-            handleSecurityResult();
-            break;
-        case Initialization:
-            handleServerInit();
-            break;
-        case Normal: {
-            // Handle server messages
-            if (this->_readBuffer.size() < 1)
-                return;
+            case ProtocolVersion:
+                this->handleProtocolVersion();
+                break;
+            case SecurityHandshake:
+                this->handleSecurityHandshake();
+                break;
+            case SecurityResult:
+                this->handleSecurityResult();
+                break;
+            case Initialization:
+                this->handleServerInit();
+                break;
+            case Normal: {
+                // Handle server messages
+                if (this->m_readBuffer.size() < 1)
+                    return;
 
-            quint8 msgType = (quint8) this->_readBuffer.at(0);
-            // qDebug() << "VNCGraphicsClient: Processing message type:" << msgType << "buffer size:" << this->_readBuffer.size();
-            bool processed = false;
-            switch (msgType)
-            {
-            case 0: // FramebufferUpdate
-                processed = handleFramebufferUpdate();
-                break;
-            case 1: // SetColorMapEntries
-                processed = handleSetColorMapEntries();
-                break;
-            case 2: // Bell
-                processed = handleBell();
-                break;
-            case 3: // ServerCutText
-                processed = handleServerCutText();
-                break;
-            default:
-                qWarning() << "VNCGraphicsClient: Unknown message type:" << msgType;
-                qWarning() << "VNCGraphicsClient: Buffer size:" << this->_readBuffer.size();
-                qWarning() << "VNCGraphicsClient: Next few bytes:"
-                           << ((this->_readBuffer.size() > 1) ? QString::number((quint8) this->_readBuffer.at(1), 16) : "N/A")
-                           << ((this->_readBuffer.size() > 2) ? QString::number((quint8) this->_readBuffer.at(2), 16) : "N/A")
-                           << ((this->_readBuffer.size() > 3) ? QString::number((quint8) this->_readBuffer.at(3), 16) : "N/A");
+                quint8 msgType = (quint8) this->m_readBuffer.at(0);
+                // qDebug() << "VNCGraphicsClient: Processing message type:" << msgType << "buffer size:" << this->_readBuffer.size();
+                bool processed = false;
+                switch (msgType)
+                {
+                    case 0: // FramebufferUpdate
+                        processed = this->handleFramebufferUpdate();
+                        break;
+                    case 1: // SetColorMapEntries
+                        processed = this->handleSetColorMapEntries();
+                        break;
+                    case 2: // Bell
+                        processed = this->handleBell();
+                        break;
+                    case 3: // ServerCutText
+                        processed = this->handleServerCutText();
+                        break;
+                    default:
+                        qWarning() << "VNCGraphicsClient: Unknown message type:" << msgType;
+                        qWarning() << "VNCGraphicsClient: Buffer size:" << this->m_readBuffer.size();
+                        qWarning() << "VNCGraphicsClient: Next few bytes:"
+                                   << ((this->m_readBuffer.size() > 1) ? QString::number((quint8) this->m_readBuffer.at(1), 16) : "N/A")
+                                   << ((this->m_readBuffer.size() > 2) ? QString::number((quint8) this->m_readBuffer.at(2), 16) : "N/A")
+                                   << ((this->m_readBuffer.size() > 3) ? QString::number((quint8) this->m_readBuffer.at(3), 16) : "N/A");
 
-                // Unknown message - cannot determine length, so we must disconnect
-                // to avoid protocol desynchronization
-                emit errorOccurred(this, QString("Unknown VNC message type: %1").arg(msgType));
-                DisconnectAndDispose();
-                return;
+                        // Unknown message - cannot determine length, so we must disconnect
+                        // to avoid protocol desynchronization
+                        emit errorOccurred(this, QString("Unknown VNC message type: %1").arg(msgType));
+                        this->DisconnectAndDispose();
+                        return;
+                }
+
+                if (!processed)
+                    return; // wait for more data
+                break;
             }
 
-            if (!processed)
-                return; // wait for more data
-            break;
-        }
-
-        default:
-            return;
+            default:
+                return;
         }
     }
 }
@@ -401,23 +396,22 @@ void VNCGraphicsClient::onSocketReadyRead()
 void VNCGraphicsClient::handleProtocolVersion()
 {
     // Wait for "RFB xxx.yyy\n" (12 bytes)
-    if (this->_readBuffer.size() < 12)
+    if (this->m_readBuffer.size() < 12)
         return;
 
-    QString version = QString::fromLatin1(this->_readBuffer.left(12));
-    qDebug() << "VNCGraphicsClient: Server version:" << version.trimmed();
+    QString version = QString::fromLatin1(this->m_readBuffer.left(12)).trimmed();
 
     // Parse server version (e.g., "RFB 003.003" or "RFB 003.008")
-    QString versionStr = version.trimmed();
+    qDebug() << "VNCGraphicsClient: Server version:" << version;
 
     // Extract major and minor version numbers
     // Format: "RFB MMM.mmm" where MMM is major, mmm is minor
     int majorVersion = 3; // Default
     int minorVersion = 8; // Default to 3.8
 
-    if (versionStr.startsWith("RFB "))
+    if (version.startsWith("RFB "))
     {
-        QStringList parts = versionStr.mid(4).split('.');
+        QStringList parts = version.mid(4).split('.');
         if (parts.size() == 2)
         {
             majorVersion = parts[0].toInt();
@@ -433,36 +427,36 @@ void VNCGraphicsClient::handleProtocolVersion()
     {
         // Server is using RFB 3.3 - respond with 3.3
         clientVersion = "RFB 003.003\n";
-        this->_protocolMinorVersion = 3;
+        this->m_protocolMinorVersion = 3;
         qDebug() << "VNCGraphicsClient: Using RFB 3.3 protocol";
     } else if (minorVersion <= 7)
     {
         // Server supports up to 3.7 - use 3.7
         clientVersion = "RFB 003.007\n";
-        this->_protocolMinorVersion = 7;
+        this->m_protocolMinorVersion = 7;
         qDebug() << "VNCGraphicsClient: Using RFB 3.7 protocol";
     } else
     {
         // Server supports 3.8 or higher - use 3.8
         clientVersion = "RFB 003.008\n";
-        this->_protocolMinorVersion = 8;
+        this->m_protocolMinorVersion = 8;
         qDebug() << "VNCGraphicsClient: Using RFB 3.8 protocol";
     }
 
-    this->_vncStream->write(clientVersion.toLatin1());
-    this->_vncStream->flush();
+    this->m_vncStream->write(clientVersion.toLatin1());
+    this->m_vncStream->flush();
 
-    this->_readBuffer.remove(0, 12);
-    this->_state = SecurityHandshake;
+    this->m_readBuffer.remove(0, 12);
+    this->m_state = SecurityHandshake;
 }
 
 void VNCGraphicsClient::handleSecurityHandshake()
 {
     // RFB 3.3 and 3.7+ use different security handshake formats
-    if (this->_protocolMinorVersion <= 3)
+    if (this->m_protocolMinorVersion <= 3)
     {
         // RFB 3.3: Server sends 32-bit security type directly
-        if (this->_readBuffer.size() < 4)
+        if (this->m_readBuffer.size() < 4)
             return;
 
         quint32 securityType = readU32();
@@ -480,27 +474,27 @@ void VNCGraphicsClient::handleSecurityHandshake()
         {
             // No authentication - proceed directly to ClientInit
             qDebug() << "VNCGraphicsClient: No authentication required";
-            this->_state = Initialization;
+            this->m_state = Initialization;
             sendClientInit();
         } else if (securityType == 2)
         {
             // VNC Authentication - wait for 16-byte challenge
             qDebug() << "VNCGraphicsClient: VNC authentication required";
 
-            if (this->_readBuffer.size() < 16)
+            if (this->m_readBuffer.size() < 16)
                 return;
 
             // Read 16-byte challenge
-            QByteArray challenge = this->_readBuffer.left(16);
-            this->_readBuffer.remove(0, 16);
+            QByteArray challenge = this->m_readBuffer.left(16);
+            this->m_readBuffer.remove(0, 16);
 
             // TODO: Implement proper DES encryption with password
             // For now, send back the challenge unmodified (will fail but allows testing)
             qWarning() << "VNCGraphicsClient: VNC authentication not fully implemented";
-            this->_vncStream->write(challenge);
-            this->_vncStream->flush();
+            this->m_vncStream->write(challenge);
+            this->m_vncStream->flush();
 
-            this->_state = SecurityResult;
+            this->m_state = SecurityResult;
         } else
         {
             qWarning() << "VNCGraphicsClient: Unknown security type:" << securityType;
@@ -511,24 +505,24 @@ void VNCGraphicsClient::handleSecurityHandshake()
     {
         // RFB 3.7+: Server sends list of security types
         // Wait for security type count
-        if (this->_readBuffer.size() < 1)
+        if (this->m_readBuffer.size() < 1)
             return;
 
-        quint8 securityTypeCount = (quint8) this->_readBuffer.at(0);
+        quint8 securityTypeCount = (quint8) this->m_readBuffer.at(0);
 
         if (securityTypeCount == 0)
         {
             // Connection failed - read reason string
-            this->_readBuffer.remove(0, 1);
-            if (this->_readBuffer.size() < 4)
+            this->m_readBuffer.remove(0, 1);
+            if (this->m_readBuffer.size() < 4)
                 return;
 
             quint32 reasonLength = readU32();
-            if (this->_readBuffer.size() < (int) reasonLength)
+            if (this->m_readBuffer.size() < (int) reasonLength)
                 return;
 
-            QString reason = QString::fromUtf8(this->_readBuffer.left(reasonLength));
-            this->_readBuffer.remove(0, reasonLength);
+            QString reason = QString::fromUtf8(this->m_readBuffer.left(reasonLength));
+            this->m_readBuffer.remove(0, reasonLength);
 
             qWarning() << "VNCGraphicsClient: Server rejected connection:" << reason;
             emit errorOccurred(this, "Server rejected: " + reason);
@@ -536,7 +530,7 @@ void VNCGraphicsClient::handleSecurityHandshake()
             return;
         }
 
-        if (this->_readBuffer.size() < 1 + securityTypeCount)
+        if (this->m_readBuffer.size() < 1 + securityTypeCount)
             return;
 
         qDebug() << "VNCGraphicsClient: Security types:" << securityTypeCount;
@@ -547,7 +541,7 @@ void VNCGraphicsClient::handleSecurityHandshake()
 
         for (int i = 0; i < securityTypeCount; i++)
         {
-            quint8 secType = (quint8) this->_readBuffer.at(1 + i);
+            quint8 secType = (quint8) this->m_readBuffer.at(1 + i);
             qDebug() << "VNCGraphicsClient: Security type:" << secType;
             if (secType == 1)
                 foundNone = true;
@@ -555,29 +549,29 @@ void VNCGraphicsClient::handleSecurityHandshake()
                 foundVNC = true;
         }
 
-        this->_readBuffer.remove(0, 1 + securityTypeCount);
+        this->m_readBuffer.remove(0, 1 + securityTypeCount);
 
         // Choose security type (prefer VNC auth if password provided)
-        if (!this->_password.isEmpty() && foundVNC)
+        if (!this->m_password.isEmpty() && foundVNC)
         {
             qDebug() << "VNCGraphicsClient: Using VNC authentication";
             writeU8(2); // VNC Authentication
-            this->_vncStream->flush();
+            this->m_vncStream->flush();
 
             // Wait for challenge (handled in separate state)
             // For now, skip to SecurityResult (proper DES encryption needed for production)
             qWarning() << "VNCGraphicsClient: VNC authentication not fully implemented - using empty response";
 
             // Send dummy 16-byte response
-            this->_vncStream->write(QByteArray(16, 0));
-            this->_vncStream->flush();
-            this->_state = SecurityResult;
+            this->m_vncStream->write(QByteArray(16, 0));
+            this->m_vncStream->flush();
+            this->m_state = SecurityResult;
         } else if (foundNone)
         {
             qDebug() << "VNCGraphicsClient: Using no authentication";
             writeU8(1); // None
-            this->_vncStream->flush();
-            this->_state = SecurityResult;
+            this->m_vncStream->flush();
+            this->m_state = SecurityResult;
         } else
         {
             qWarning() << "VNCGraphicsClient: No compatible security type found";
@@ -589,7 +583,7 @@ void VNCGraphicsClient::handleSecurityHandshake()
 
 void VNCGraphicsClient::handleSecurityResult()
 {
-    if (this->_readBuffer.size() < 4)
+    if (this->m_readBuffer.size() < 4)
         return;
 
     quint32 result = readU32();
@@ -599,10 +593,10 @@ void VNCGraphicsClient::handleSecurityResult()
     {
         // Authentication failed - read reason if available
         QString reason = "Authentication failed";
-        if (this->_readBuffer.size() >= 4)
+        if (this->m_readBuffer.size() >= 4)
         {
             quint32 reasonLength = readU32();
-            if (this->_readBuffer.size() >= (int) reasonLength)
+            if (this->m_readBuffer.size() >= (int) reasonLength)
             {
                 reason = QString::fromLatin1(readBytes(reasonLength));
             }
@@ -614,14 +608,14 @@ void VNCGraphicsClient::handleSecurityResult()
 
     // Authentication successful - send ClientInit
     sendClientInit();
-    this->_state = Initialization;
+    this->m_state = Initialization;
 }
 
 void VNCGraphicsClient::sendClientInit()
 {
     // Matches C# VNCStream initialization
     writeU8(1); // Shared flag (1 = shared desktop)
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
     qDebug() << "VNCGraphicsClient: Sent ClientInit (shared=1)";
 }
 
@@ -629,56 +623,56 @@ void VNCGraphicsClient::handleServerInit()
 {
     // ServerInit structure:
     // width: U16, height: U16, pixel_format: 16 bytes, name_length: U32, name: string
-    if (this->_readBuffer.size() < 24)
+    if (this->m_readBuffer.size() < 24)
         return;
 
-    this->_fbWidth = readU16();
-    this->_fbHeight = readU16();
+    this->m_fbWidth = readU16();
+    this->m_fbHeight = readU16();
 
     // Pixel format (16 bytes)
-    this->_pixelFormat.bitsPerPixel = readU8();
-    this->_pixelFormat.depth = readU8();
-    this->_pixelFormat.bigEndian = readU8();
-    this->_pixelFormat.trueColor = readU8();
-    this->_pixelFormat.redMax = readU16();
-    this->_pixelFormat.greenMax = readU16();
-    this->_pixelFormat.blueMax = readU16();
-    this->_pixelFormat.redShift = readU8();
-    this->_pixelFormat.greenShift = readU8();
-    this->_pixelFormat.blueShift = readU8();
+    this->m_pixelFormat.bitsPerPixel = readU8();
+    this->m_pixelFormat.depth = readU8();
+    this->m_pixelFormat.bigEndian = readU8();
+    this->m_pixelFormat.trueColor = readU8();
+    this->m_pixelFormat.redMax = readU16();
+    this->m_pixelFormat.greenMax = readU16();
+    this->m_pixelFormat.blueMax = readU16();
+    this->m_pixelFormat.redShift = readU8();
+    this->m_pixelFormat.greenShift = readU8();
+    this->m_pixelFormat.blueShift = readU8();
     readBytes(3); // padding
 
     quint32 nameLength = readU32();
-    if (this->_readBuffer.size() < (int) nameLength)
+    if (this->m_readBuffer.size() < (int) nameLength)
         return;
 
-    this->_desktopName = QString::fromUtf8(readBytes(nameLength));
+    this->m_desktopName = QString::fromUtf8(readBytes(nameLength));
 
-    qDebug() << "VNCGraphicsClient: Framebuffer:" << this->_fbWidth << "x" << this->_fbHeight;
-    qDebug() << "VNCGraphicsClient: Desktop name:" << this->_desktopName;
-    qDebug() << "VNCGraphicsClient: Pixel format:" << this->_pixelFormat.bitsPerPixel << "bpp";
+    qDebug() << "VNCGraphicsClient: Framebuffer:" << this->m_fbWidth << "x" << this->m_fbHeight;
+    qDebug() << "VNCGraphicsClient: Desktop name:" << this->m_desktopName;
+    qDebug() << "VNCGraphicsClient: Pixel format:" << this->m_pixelFormat.bitsPerPixel << "bpp";
 
     // Create/resize framebuffer (matches C# OnDesktopSizeChanged)
     {
-        QMutexLocker locker(&this->_backBufferMutex);
-        this->_backBuffer = QImage(this->_fbWidth, this->_fbHeight, QImage::Format_RGB32);
-        this->_backBuffer.fill(Qt::black);
-        this->_backBufferInteresting = false;
+        QMutexLocker locker(&this->m_backBufferMutex);
+        this->m_backBuffer = QImage(this->m_fbWidth, this->m_fbHeight, QImage::Format_RGB32);
+        this->m_backBuffer.fill(Qt::black);
+        this->m_backBufferInteresting = false;
     }
 
     // Decide whether to force RGB32 to match XenCenter behaviour.
-    const bool serverTrueColor = this->_pixelFormat.trueColor != 0;
+    const bool serverTrueColor = this->m_pixelFormat.trueColor != 0;
     const bool serverIsRgb32 =
         serverTrueColor &&
-        this->_pixelFormat.bitsPerPixel == 32 &&
-        this->_pixelFormat.depth >= 24 &&
-        this->_pixelFormat.redMax == 255 &&
-        this->_pixelFormat.greenMax == 255 &&
-        this->_pixelFormat.blueMax == 255 &&
-        this->_pixelFormat.redShift == 16 &&
-        this->_pixelFormat.greenShift == 8 &&
-        this->_pixelFormat.blueShift == 0 &&
-        this->_pixelFormat.bigEndian == 0;
+        this->m_pixelFormat.bitsPerPixel == 32 &&
+        this->m_pixelFormat.depth >= 24 &&
+        this->m_pixelFormat.redMax == 255 &&
+        this->m_pixelFormat.greenMax == 255 &&
+        this->m_pixelFormat.blueMax == 255 &&
+        this->m_pixelFormat.redShift == 16 &&
+        this->m_pixelFormat.greenShift == 8 &&
+        this->m_pixelFormat.blueShift == 0 &&
+        this->m_pixelFormat.bigEndian == 0;
 
     if (!serverIsRgb32)
     {
@@ -697,7 +691,7 @@ void VNCGraphicsClient::handleServerInit()
     qDebug() << "VNCGraphicsClient: Requesting initial framebuffer update";
     sendFramebufferUpdateRequest(false);
 
-    this->_state = Normal;
+    this->m_state = Normal;
     qDebug() << "VNCGraphicsClient: Entered Normal state";
     updateScale();
 
@@ -706,7 +700,7 @@ void VNCGraphicsClient::handleServerInit()
     this->setFocusPolicy(Qt::StrongFocus);
 
     // Start update timer
-    this->_updateTimer->start();
+    this->m_updateTimer->start();
 
     emit connectionSuccess();
     emit desktopResized();
@@ -736,19 +730,19 @@ void VNCGraphicsClient::sendSetPixelFormat()
     writeU8(0);
     writeU8(0);
 
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
 
     // Update local pixel format to match what we requested
-    this->_pixelFormat.bitsPerPixel = 32;
-    this->_pixelFormat.depth = 24;
-    this->_pixelFormat.bigEndian = 0;
-    this->_pixelFormat.trueColor = 1;
-    this->_pixelFormat.redMax = 255;
-    this->_pixelFormat.greenMax = 255;
-    this->_pixelFormat.blueMax = 255;
-    this->_pixelFormat.redShift = 16;
-    this->_pixelFormat.greenShift = 8;
-    this->_pixelFormat.blueShift = 0;
+    this->m_pixelFormat.bitsPerPixel = 32;
+    this->m_pixelFormat.depth = 24;
+    this->m_pixelFormat.bigEndian = 0;
+    this->m_pixelFormat.trueColor = 1;
+    this->m_pixelFormat.redMax = 255;
+    this->m_pixelFormat.greenMax = 255;
+    this->m_pixelFormat.blueMax = 255;
+    this->m_pixelFormat.redShift = 16;
+    this->m_pixelFormat.greenShift = 8;
+    this->m_pixelFormat.blueShift = 0;
 }
 
 void VNCGraphicsClient::sendSetEncodings()
@@ -761,7 +755,7 @@ void VNCGraphicsClient::sendSetEncodings()
     // Encoding types (we only support Raw for now)
     writeU32(0); // Raw encoding
 
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
 }
 
 void VNCGraphicsClient::sendFramebufferUpdateRequest(bool incremental)
@@ -771,15 +765,15 @@ void VNCGraphicsClient::sendFramebufferUpdateRequest(bool incremental)
     writeU8(incremental ? 1 : 0); // Incremental flag
     writeU16(0);                  // x
     writeU16(0);                  // y
-    writeU16(this->_fbWidth);           // width
-    writeU16(this->_fbHeight);          // height
+    writeU16(this->m_fbWidth);           // width
+    writeU16(this->m_fbHeight);          // height
 
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
 }
 
 void VNCGraphicsClient::requestFramebufferUpdate()
 {
-    if (this->_connected && this->_state == Normal && !this->_helperIsPaused)
+    if (this->m_connected && this->m_state == Normal && !this->m_helperIsPaused)
     {
         sendFramebufferUpdateRequest(true);
     }
@@ -812,13 +806,13 @@ bool VNCGraphicsClient::handleFramebufferUpdate()
     const int bpp = bytesPerPixel();
 
     // Check if header is available
-    if (this->_readBuffer.size() < 4)
+    if (this->m_readBuffer.size() < 4)
         return false;
 
     // Peek at header (don't consume yet)
-    quint8 msgType = (quint8) this->_readBuffer.at(offset++); // Should be 0
-    quint8 padding = (quint8) this->_readBuffer.at(offset++);
-    quint16 numRects = ((quint8) this->_readBuffer.at(offset) << 8) | (quint8) this->_readBuffer.at(offset + 1);
+    quint8 msgType = (quint8) this->m_readBuffer.at(offset++); // Should be 0
+    quint8 padding = (quint8) this->m_readBuffer.at(offset++);
+    quint16 numRects = ((quint8) this->m_readBuffer.at(offset) << 8) | (quint8) this->m_readBuffer.at(offset + 1);
     offset += 2;
 
     Q_UNUSED(msgType); // Already verified by caller
@@ -830,27 +824,27 @@ bool VNCGraphicsClient::handleFramebufferUpdate()
     for (quint16 i = 0; i < numRects; i++)
     {
         // Check if rectangle header is available
-        if (this->_readBuffer.size() - offset < 12)
+        if (this->m_readBuffer.size() - offset < 12)
         {
             // qDebug() << "VNCGraphicsClient: Waiting for rectangle header" << i << "of" << numRects;
             return false; // Wait for more data
         }
 
         // Peek at rectangle header
-        quint16 peekX = ((quint8) this->_readBuffer.at(offset) << 8) | (quint8) this->_readBuffer.at(offset + 1);
+        quint16 peekX = ((quint8) this->m_readBuffer.at(offset) << 8) | (quint8) this->m_readBuffer.at(offset + 1);
         offset += 2;
-        quint16 peekY = ((quint8) this->_readBuffer.at(offset) << 8) | (quint8) this->_readBuffer.at(offset + 1);
+        quint16 peekY = ((quint8) this->m_readBuffer.at(offset) << 8) | (quint8) this->m_readBuffer.at(offset + 1);
         offset += 2;
-        quint16 width = ((quint8) this->_readBuffer.at(offset) << 8) | (quint8) this->_readBuffer.at(offset + 1);
+        quint16 width = ((quint8) this->m_readBuffer.at(offset) << 8) | (quint8) this->m_readBuffer.at(offset + 1);
         offset += 2;
-        quint16 height = ((quint8) this->_readBuffer.at(offset) << 8) | (quint8) this->_readBuffer.at(offset + 1);
+        quint16 height = ((quint8) this->m_readBuffer.at(offset) << 8) | (quint8) this->m_readBuffer.at(offset + 1);
         offset += 2;
 
         // Encoding is signed 32-bit
-        qint32 encoding = ((quint8) this->_readBuffer.at(offset) << 24) |
-                          ((quint8) this->_readBuffer.at(offset + 1) << 16) |
-                          ((quint8) this->_readBuffer.at(offset + 2) << 8) |
-                          (quint8) this->_readBuffer.at(offset + 3);
+        qint32 encoding = ((quint8) this->m_readBuffer.at(offset) << 24) |
+                          ((quint8) this->m_readBuffer.at(offset + 1) << 16) |
+                          ((quint8) this->m_readBuffer.at(offset + 2) << 8) |
+                          (quint8) this->m_readBuffer.at(offset + 3);
         offset += 4;
 
         Q_UNUSED(peekX); // Only used for validation
@@ -861,7 +855,7 @@ bool VNCGraphicsClient::handleFramebufferUpdate()
             // Raw encoding - check if pixel data is available
             int dataSize = width * height * bpp;
 
-            if (this->_readBuffer.size() - offset < dataSize)
+            if (this->m_readBuffer.size() - offset < dataSize)
             {
                 // qDebug() << "VNCGraphicsClient: Waiting for pixel data, need" << dataSize
                 //          << "bytes, have" << (this->_readBuffer.size() - offset);
@@ -907,22 +901,22 @@ bool VNCGraphicsClient::handleFramebufferUpdate()
 
             // Draw to back buffer (matches C# Damage/OnPaint)
             {
-                QMutexLocker locker(&this->_backBufferMutex);
+                QMutexLocker locker(&this->m_backBufferMutex);
 
                 for (int py = 0; py < height; py++)
                 {
                     for (int px = 0; px < width; px++)
                     {
                         int pixelOffset = (py * width + px) * bpp;
-                        if (x + px < (quint16) this->_fbWidth && y + py < (quint16) this->_fbHeight)
+                        if (x + px < (quint16) this->m_fbWidth && y + py < (quint16) this->m_fbHeight)
                         {
                             const uchar* pixelPtr = reinterpret_cast<const uchar*>(pixelData.constData() + pixelOffset);
-                            this->_backBuffer.setPixel(x + px, y + py, decodePixel(pixelPtr));
+                            this->m_backBuffer.setPixel(x + px, y + py, decodePixel(pixelPtr));
                         }
                     }
                 }
 
-                this->_backBufferInteresting = true;
+                this->m_backBufferInteresting = true;
             }
 
             // Record damage (matches C# Damage method)
@@ -938,19 +932,19 @@ bool VNCGraphicsClient::handleFramebufferUpdate()
 bool VNCGraphicsClient::handleSetColorMapEntries()
 {
     // SetColorMapEntries: msg_type: U8, padding: U8, first_color: U16, num_colors: U16, colors...
-    if (this->_readBuffer.size() < 6)
+    if (this->m_readBuffer.size() < 6)
         return false;
 
     int offset = 0;
     offset += 2; // message type + padding
-    quint16 firstColor = qFromBigEndian<quint16>((const uchar*) this->_readBuffer.constData() + offset);
+    quint16 firstColor = qFromBigEndian<quint16>((const uchar*) this->m_readBuffer.constData() + offset);
     offset += 2;
-    quint16 numColors = qFromBigEndian<quint16>((const uchar*) this->_readBuffer.constData() + offset);
+    quint16 numColors = qFromBigEndian<quint16>((const uchar*) this->m_readBuffer.constData() + offset);
     offset += 2;
 
     // Each color is 6 bytes (3 * U16)
     int colorDataSize = numColors * 6;
-    if (this->_readBuffer.size() - offset < colorDataSize)
+    if (this->m_readBuffer.size() - offset < colorDataSize)
         return false;
 
     readU8();                 // Message type
@@ -964,7 +958,7 @@ bool VNCGraphicsClient::handleSetColorMapEntries()
 
 bool VNCGraphicsClient::handleBell()
 {
-    if (this->_readBuffer.size() < 1)
+    if (this->m_readBuffer.size() < 1)
         return false;
 
     readU8(); // Message type
@@ -976,11 +970,11 @@ bool VNCGraphicsClient::handleBell()
 bool VNCGraphicsClient::handleServerCutText()
 {
     // ServerCutText structure: msg_type: U8, padding: 3 bytes, length: U32, text: string
-    if (this->_readBuffer.size() < 8)
+    if (this->m_readBuffer.size() < 8)
         return false;
 
-    quint32 length = qFromBigEndian<quint32>((const uchar*) this->_readBuffer.constData() + 4);
-    if (this->_readBuffer.size() < 8 + (int) length)
+    quint32 length = qFromBigEndian<quint32>((const uchar*) this->m_readBuffer.constData() + 4);
+    if (this->m_readBuffer.size() < 8 + (int) length)
         return false;
 
     readU8();     // Message type
@@ -993,9 +987,9 @@ bool VNCGraphicsClient::handleServerCutText()
     // Set clipboard (matches C# clipboard handling)
     if (redirectingClipboard())
     {
-        this->_handlingChange = true;
+        this->m_handlingChange = true;
         QApplication::clipboard()->setText(text);
-        this->_handlingChange = false;
+        this->m_handlingChange = false;
     }
     return true;
 }
@@ -1012,7 +1006,7 @@ static const quint8 QEMU_EXT_KEY_EVENT = 0; // QEMU extended key event subtype
 
 void VNCGraphicsClient::sendKeyEvent(quint32 key, bool down)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     writeU8(KEY_EVENT);    // Message type 4
@@ -1020,16 +1014,16 @@ void VNCGraphicsClient::sendKeyEvent(quint32 key, bool down)
     writeU16(0);           // Padding
     writeU32(key);         // Keysym
 
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
 }
 
 void VNCGraphicsClient::sendScanCodeEvent(quint32 scanCode, quint32 keysym, bool down)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     // Use QEMU extended key encoding if available (matches C# keyScanEvent)
-    if (this->_useQemuExtKeyEncoding)
+    if (this->m_useQemuExtKeyEncoding)
     {
         // QEMU extended key event format (from C# WriteQemuExtKey)
         writeU8(QEMU_MSG);           // Message type 255
@@ -1047,12 +1041,12 @@ void VNCGraphicsClient::sendScanCodeEvent(quint32 scanCode, quint32 keysym, bool
         writeU32(scanCode);      // Scan code
     }
 
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
 }
 
 void VNCGraphicsClient::sendPointerEvent(quint8 buttonMask, quint16 x, quint16 y)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     writeU8(5);          // Message type
@@ -1060,12 +1054,12 @@ void VNCGraphicsClient::sendPointerEvent(quint8 buttonMask, quint16 x, quint16 y
     writeU16(x);         // X position
     writeU16(y);         // Y position
 
-    this->_vncStream->flush();
+    this->m_vncStream->flush();
 }
 
 void VNCGraphicsClient::sendClientCutText(const QString& text)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     QByteArray utf8Text = text.toUtf8();
@@ -1076,8 +1070,8 @@ void VNCGraphicsClient::sendClientCutText(const QString& text)
     writeU8(0);
     writeU32(utf8Text.length()); // Length
 
-    this->_vncStream->write(utf8Text);
-    this->_vncStream->flush();
+    this->m_vncStream->write(utf8Text);
+    this->m_vncStream->flush();
 }
 
 //=============================================================================
@@ -1089,27 +1083,27 @@ void VNCGraphicsClient::damage(int x, int y, int width, int height)
     // Matches C# Damage(int x, int y, int width, int height)
     QRect r(x, y, width, height);
 
-    if (this->_scaling)
+    if (this->m_scaling)
     {
-        r.adjust(-this->_bump, -this->_bump, this->_bump, this->_bump); // Inflate for scaling fix
+        r.adjust(-this->m_bump, -this->m_bump, this->m_bump, this->m_bump); // Inflate for scaling fix
     }
 
-    if (this->_damage.isEmpty())
+    if (this->m_damage.isEmpty())
     {
-        this->_damage = r;
+        this->m_damage = r;
     } else
     {
-        this->_damage = this->_damage.united(r);
+        this->m_damage = this->m_damage.united(r);
     }
 }
 
 void VNCGraphicsClient::renderDamage()
 {
     // Trigger repaint (matches C# Invalidate)
-    if (!this->_damage.isEmpty())
+    if (!this->m_damage.isEmpty())
     {
         update();
-        this->_damage = QRect();
+        this->m_damage = QRect();
     }
 }
 
@@ -1122,7 +1116,7 @@ bool VNCGraphicsClient::event(QEvent* event)
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab)
         {
-            if (this->_connected)
+            if (this->m_connected)
             {
                 // Handle it as a regular key event
                 if (event->type() == QEvent::KeyPress)
@@ -1144,7 +1138,7 @@ void VNCGraphicsClient::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     setupGraphicsOptions(painter);
 
-    if (this->_backBuffer.isNull() || !this->_backBufferInteresting)
+    if (this->m_backBuffer.isNull() || !this->m_backBufferInteresting)
     {
         // No content yet - just draw black background
         // C#: base.OnPaintBackground(e) - does NOT draw "Connecting..." text
@@ -1153,22 +1147,22 @@ void VNCGraphicsClient::paintEvent(QPaintEvent* event)
     }
 
     // Lock back buffer and render (matches C# lock(_backBuffer))
-    QMutexLocker locker(&this->_backBufferMutex);
+    QMutexLocker locker(&this->m_backBufferMutex);
 
-    if (this->_scaling)
+    if (this->m_scaling)
     {
         // Scale to fit with aspect ratio preservation (matches C# scaling logic)
         // Calculate scaled size accounting for border padding if enabled
-        int effectiveWidth = this->_displayBorder ? this->_fbWidth + BORDER_PADDING * 3 : this->_fbWidth;
-        int effectiveHeight = this->_displayBorder ? this->_fbHeight + BORDER_PADDING * 3 : this->_fbHeight;
+        int effectiveWidth = this->m_displayBorder ? this->m_fbWidth + BORDER_PADDING * 3 : this->m_fbWidth;
+        int effectiveHeight = this->m_displayBorder ? this->m_fbHeight + BORDER_PADDING * 3 : this->m_fbHeight;
 
         float xScale = (float) width() / effectiveWidth;
         float yScale = (float) height() / effectiveHeight;
         float scale = qMin(xScale, yScale);
         scale = qMax(scale, 0.01f); // Prevent division by zero
 
-        int scaledWidth = (int) (this->_fbWidth * scale);
-        int scaledHeight = (int) (this->_fbHeight * scale);
+        int scaledWidth = (int) (this->m_fbWidth * scale);
+        int scaledHeight = (int) (this->m_fbHeight * scale);
         int offsetX = (width() - scaledWidth) / 2;
         int offsetY = (height() - scaledHeight) / 2;
 
@@ -1176,7 +1170,7 @@ void VNCGraphicsClient::paintEvent(QPaintEvent* event)
 
         // Draw scaled image with smooth transform for better quality
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter.drawImage(targetRect, this->_backBuffer);
+        painter.drawImage(targetRect, this->m_backBuffer);
 
         // Draw surrounding black bars to avoid artifacts
         // Left bar
@@ -1195,7 +1189,7 @@ void VNCGraphicsClient::paintEvent(QPaintEvent* event)
             painter.fillRect(0, bottomY, width(), height() - bottomY, Qt::black);
 
         // Draw border if enabled
-        if (this->_displayBorder)
+        if (this->m_displayBorder)
         {
             drawBorder(painter, targetRect);
         }
@@ -1204,22 +1198,22 @@ void VNCGraphicsClient::paintEvent(QPaintEvent* event)
         // 1:1 pixel mapping - but still CENTER the image (matches C# behavior)
         // C#: _dx = ((float)Size.Width - DesktopSize.Width) / 2;
         //     _dy = ((float)Size.Height - DesktopSize.Height) / 2;
-        int offsetX = qMax(0, (width() - this->_fbWidth) / 2);
-        int offsetY = qMax(0, (height() - this->_fbHeight) / 2);
+        int offsetX = qMax(0, (width() - this->m_fbWidth) / 2);
+        int offsetY = qMax(0, (height() - this->m_fbHeight) / 2);
 
         // Draw black background for areas not covered by console
         if (offsetX > 0 || offsetY > 0 ||
-            this->_fbWidth < width() || this->_fbHeight < height())
+            this->m_fbWidth < width() || this->m_fbHeight < height())
         {
             painter.fillRect(rect(), Qt::black);
         }
 
-        painter.drawImage(offsetX, offsetY, this->_backBuffer);
+        painter.drawImage(offsetX, offsetY, this->m_backBuffer);
 
         // Draw border if enabled
-        if (this->_displayBorder)
+        if (this->m_displayBorder)
         {
-            QRect consoleRect(offsetX, offsetY, this->_fbWidth, this->_fbHeight);
+            QRect consoleRect(offsetX, offsetY, this->m_fbWidth, this->m_fbHeight);
             drawBorder(painter, consoleRect);
         }
     }
@@ -1249,45 +1243,45 @@ void VNCGraphicsClient::setupGraphicsOptions(QPainter& painter)
 void VNCGraphicsClient::updateScale()
 {
     // Matches C# SetupScaling calculation
-    if (this->_backBuffer.isNull())
+    if (this->m_backBuffer.isNull())
         return;
 
-    if (this->_scaling)
+    if (this->m_scaling)
     {
         // Calculate scale accounting for border padding if enabled
-        int effectiveWidth = this->_displayBorder ? this->_fbWidth + BORDER_PADDING * 3 : this->_fbWidth;
-        int effectiveHeight = this->_displayBorder ? this->_fbHeight + BORDER_PADDING * 3 : this->_fbHeight;
+        int effectiveWidth = this->m_displayBorder ? this->m_fbWidth + BORDER_PADDING * 3 : this->m_fbWidth;
+        int effectiveHeight = this->m_displayBorder ? this->m_fbHeight + BORDER_PADDING * 3 : this->m_fbHeight;
 
         float xScale = (float) width() / effectiveWidth;
         float yScale = (float) height() / effectiveHeight;
-        this->_scale = qMin(xScale, yScale);
-        this->_scale = qMax(this->_scale, 0.01f); // Prevent division by zero
+        this->m_scale = qMin(xScale, yScale);
+        this->m_scale = qMax(this->m_scale, 0.01f); // Prevent division by zero
 
-        this->_dx = (width() - this->_fbWidth * this->_scale) / 2.0f;
-        this->_dy = (height() - this->_fbHeight * this->_scale) / 2.0f;
+        this->m_dx = (width() - this->m_fbWidth * this->m_scale) / 2.0f;
+        this->m_dy = (height() - this->m_fbHeight * this->m_scale) / 2.0f;
 
-        this->_bump = (int) qCeil(1.0f / this->_scale); // For damage inflation
+        this->m_bump = (int) qCeil(1.0f / this->m_scale); // For damage inflation
     } else
     {
-        this->_scale = 1.0f;
-        this->_bump = 0;
+        this->m_scale = 1.0f;
+        this->m_bump = 0;
 
         // Even in non-scaling mode, center the image if it's smaller than the widget
         // This matches C# behavior
-        if (width() >= this->_fbWidth)
+        if (width() >= this->m_fbWidth)
         {
-            this->_dx = (width() - this->_fbWidth) / 2.0f;
+            this->m_dx = (width() - this->m_fbWidth) / 2.0f;
         } else
         {
-            this->_dx = this->_displayBorder ? BORDER_PADDING : 0;
+            this->m_dx = this->m_displayBorder ? BORDER_PADDING : 0;
         }
 
-        if (height() >= this->_fbHeight)
+        if (height() >= this->m_fbHeight)
         {
-            this->_dy = (height() - this->_fbHeight) / 2.0f;
+            this->m_dy = (height() - this->m_fbHeight) / 2.0f;
         } else
         {
-            this->_dy = this->_displayBorder ? BORDER_PADDING : 0;
+            this->m_dy = this->m_displayBorder ? BORDER_PADDING : 0;
         }
     }
 }
@@ -1305,28 +1299,28 @@ void VNCGraphicsClient::resizeEvent(QResizeEvent* event)
 
 QPoint VNCGraphicsClient::translateMouseCoords(const QPoint& pos)
 {
-    if (this->_backBuffer.isNull())
+    if (this->m_backBuffer.isNull())
         return QPoint(0, 0);
 
-    if (this->_scaling)
+    if (this->m_scaling)
     {
-        int x = (int) ((pos.x() - this->_dx) / this->_scale);
-        int y = (int) ((pos.y() - this->_dy) / this->_scale);
-        return QPoint(qBound(0, x, this->_fbWidth - 1),
-                      qBound(0, y, this->_fbHeight - 1));
+        int x = (int) ((pos.x() - this->m_dx) / this->m_scale);
+        int y = (int) ((pos.y() - this->m_dy) / this->m_scale);
+        return QPoint(qBound(0, x, this->m_fbWidth - 1),
+                      qBound(0, y, this->m_fbHeight - 1));
     } else
     {
         // Even in non-scaling mode, account for centering offset
-        int x = pos.x() - (int) this->_dx;
-        int y = pos.y() - (int) this->_dy;
-        return QPoint(qBound(0, x, this->_fbWidth - 1),
-                      qBound(0, y, this->_fbHeight - 1));
+        int x = pos.x() - (int) this->m_dx;
+        int y = pos.y() - (int) this->m_dy;
+        return QPoint(qBound(0, x, this->m_fbWidth - 1),
+                      qBound(0, y, this->m_fbHeight - 1));
     }
 }
 
 void VNCGraphicsClient::mousePressEvent(QMouseEvent* event)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     int buttons = 0;
@@ -1339,12 +1333,12 @@ void VNCGraphicsClient::mousePressEvent(QMouseEvent* event)
 
     QPoint fbPos = translateMouseCoords(event->pos());
     sendPointerEvent(buttons, fbPos.x(), fbPos.y());
-    this->_currentMouseState = buttons;
+    this->m_currentMouseState = buttons;
 }
 
 void VNCGraphicsClient::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     int buttons = 0;
@@ -1357,42 +1351,42 @@ void VNCGraphicsClient::mouseReleaseEvent(QMouseEvent* event)
 
     QPoint fbPos = translateMouseCoords(event->pos());
     sendPointerEvent(buttons, fbPos.x(), fbPos.y());
-    this->_currentMouseState = buttons;
+    this->m_currentMouseState = buttons;
 }
 
 void VNCGraphicsClient::mouseMoveEvent(QMouseEvent* event)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     // Implement mouse throttling (matches C# MOUSE_EVENTS_BEFORE_UPDATE logic)
-    this->_mouseMoved++;
-    if (this->_mouseMoved > MOUSE_EVENTS_BEFORE_UPDATE && this->_mouseNotMoved < MOUSE_EVENTS_DROPPED)
+    this->m_mouseMoved++;
+    if (this->m_mouseMoved > MOUSE_EVENTS_BEFORE_UPDATE && this->m_mouseNotMoved < MOUSE_EVENTS_DROPPED)
     {
-        this->_mouseNotMoved++;
+        this->m_mouseNotMoved++;
         return; // Drop this event
     }
 
-    this->_mouseMoved = 0;
-    this->_mouseNotMoved = 0;
+    this->m_mouseMoved = 0;
+    this->m_mouseNotMoved = 0;
 
     QPoint fbPos = translateMouseCoords(event->pos());
-    sendPointerEvent(this->_currentMouseState, fbPos.x(), fbPos.y());
+    sendPointerEvent(this->m_currentMouseState, fbPos.x(), fbPos.y());
 }
 
 void VNCGraphicsClient::keyPressEvent(QKeyEvent* event)
 {
-    if (!this->_connected)
+    if (!this->m_connected)
         return;
 
     bool isRepeat = event->isAutoRepeat();
     Qt::Key mappedKey = this->remapKey((Qt::Key) event->key());
 
     // Let key handler process shortcuts first (matches C# ConsoleKeyHandler integration)
-    if (!isRepeat && this->_keyHandler && this->_keyHandler->handleKeyEvent(mappedKey, true))
+    if (!isRepeat && this->m_keyHandler && this->m_keyHandler->handleKeyEvent(mappedKey, true))
         return;
 
-    if (this->_sendScanCodes)
+    if (this->m_sendScanCodes)
     {
         sendScanCodes(mappedKey, true);
     } else
@@ -1408,20 +1402,20 @@ void VNCGraphicsClient::keyPressEvent(QKeyEvent* event)
     }
 
     if (!isRepeat)
-        this->_pressedKeys.insert(mappedKey);
+        this->m_pressedKeys.insert(mappedKey);
 }
 
 void VNCGraphicsClient::keyReleaseEvent(QKeyEvent* event)
 {
-    if (!this->_connected || event->isAutoRepeat())
+    if (!this->m_connected || event->isAutoRepeat())
         return;
 
     Qt::Key mappedKey = this->remapKey((Qt::Key) event->key());
 
-    if (this->_keyHandler && this->_keyHandler->handleKeyEvent(mappedKey, false))
+    if (this->m_keyHandler && this->m_keyHandler->handleKeyEvent(mappedKey, false))
         return;
 
-    if (this->_sendScanCodes)
+    if (this->m_sendScanCodes)
     {
         sendScanCodes(mappedKey, false);
     } else
@@ -1436,7 +1430,7 @@ void VNCGraphicsClient::keyReleaseEvent(QKeyEvent* event)
         }
     }
 
-    this->_pressedKeys.remove(mappedKey);
+    this->m_pressedKeys.remove(mappedKey);
 }
 
 void VNCGraphicsClient::focusInEvent(QFocusEvent* event)
@@ -1444,7 +1438,7 @@ void VNCGraphicsClient::focusInEvent(QFocusEvent* event)
     Q_UNUSED(event);
 
     // Update clipboard if needed (matches C# focus handling)
-    if (this->_updateClipboardOnFocus && redirectingClipboard())
+    if (this->m_updateClipboardOnFocus && redirectingClipboard())
     {
         setConsoleClipboard();
     }
@@ -1469,19 +1463,19 @@ bool VNCGraphicsClient::redirectingClipboard()
 void VNCGraphicsClient::onClipboardChanged()
 {
     // Matches C# ClipboardChanged event handler
-    if (!redirectingClipboard() || !this->_connected)
+    if (!redirectingClipboard() || !this->m_connected)
         return;
 
     try
     {
-        if (!this->_handlingChange)
+        if (!this->m_handlingChange)
         {
             if (hasFocus())
             {
                 setConsoleClipboard();
             } else
             {
-                this->_updateClipboardOnFocus = true;
+                this->m_updateClipboardOnFocus = true;
             }
         }
     } catch (...)
@@ -1494,24 +1488,24 @@ void VNCGraphicsClient::setConsoleClipboard()
 {
     try
     {
-        this->_handlingChange = true;
+        this->m_handlingChange = true;
 
         QString text = QApplication::clipboard()->text();
 
         // Convert line endings for text console (matches C# TalkingToVNCTerm logic)
-        if (this->_useSource && !this->_sendScanCodes)
+        if (this->m_useSource && !this->m_sendScanCodes)
         {
             text = text.replace("\r\n", "\n");
         }
 
         sendClientCutText(text);
-        this->_updateClipboardOnFocus = false;
+        this->m_updateClipboardOnFocus = false;
     } catch (...)
     {
         qWarning() << "VNCGraphicsClient: Failed to set console clipboard";
     }
 
-    this->_handlingChange = false;
+    this->m_handlingChange = false;
 }
 
 //=============================================================================
@@ -1888,10 +1882,10 @@ void VNCGraphicsClient::sendScanCodes(Qt::Key key, bool down)
     {
         if (down)
         {
-            this->_pressedScans.insert(scanCode);
+            this->m_pressedScans.insert(scanCode);
         } else
         {
-            this->_pressedScans.remove(scanCode);
+            this->m_pressedScans.remove(scanCode);
         }
 
         // Get keysym for the key as well (used in QEMU extended encoding)
@@ -1912,7 +1906,7 @@ void VNCGraphicsClient::sendScanCodes(Qt::Key key, bool down)
 
 int VNCGraphicsClient::bytesPerPixel() const
 {
-    int bpp = this->_pixelFormat.bitsPerPixel / 8;
+    int bpp = this->m_pixelFormat.bitsPerPixel / 8;
     if (bpp <= 0)
         bpp = 1;
     return bpp;
@@ -1929,18 +1923,18 @@ QRgb VNCGraphicsClient::decodePixel(const uchar* data) const
         value = data[0];
         break;
     case 2:
-        value = this->_pixelFormat.bigEndian
+        value = this->m_pixelFormat.bigEndian
                     ? qFromBigEndian<quint16>(reinterpret_cast<const uchar*>(data))
                     : qFromLittleEndian<quint16>(reinterpret_cast<const uchar*>(data));
         break;
     case 3:
-        if (this->_pixelFormat.bigEndian)
+        if (this->m_pixelFormat.bigEndian)
             value = (quint32(data[0]) << 16) | (quint32(data[1]) << 8) | quint32(data[2]);
         else
             value = quint32(data[0]) | (quint32(data[1]) << 8) | (quint32(data[2]) << 16);
         break;
     default:
-        value = this->_pixelFormat.bigEndian
+        value = this->m_pixelFormat.bigEndian
                     ? qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(data))
                     : qFromLittleEndian<quint32>(reinterpret_cast<const uchar*>(data));
         break;
@@ -1954,14 +1948,14 @@ QRgb VNCGraphicsClient::decodePixel(const uchar* data) const
         return static_cast<quint8>((component * 255) / maxVal);
     };
 
-    if (this->_pixelFormat.trueColor)
+    if (this->m_pixelFormat.trueColor)
     {
-        quint32 r = (value >> this->_pixelFormat.redShift) & this->_pixelFormat.redMax;
-        quint32 g = (value >> this->_pixelFormat.greenShift) & this->_pixelFormat.greenMax;
-        quint32 b = (value >> this->_pixelFormat.blueShift) & this->_pixelFormat.blueMax;
-        return qRgb(scaleComponent(r, this->_pixelFormat.redMax),
-                    scaleComponent(g, this->_pixelFormat.greenMax),
-                    scaleComponent(b, this->_pixelFormat.blueMax));
+        quint32 r = (value >> this->m_pixelFormat.redShift) & this->m_pixelFormat.redMax;
+        quint32 g = (value >> this->m_pixelFormat.greenShift) & this->m_pixelFormat.greenMax;
+        quint32 b = (value >> this->m_pixelFormat.blueShift) & this->m_pixelFormat.blueMax;
+        return qRgb(scaleComponent(r, this->m_pixelFormat.redMax),
+                    scaleComponent(g, this->m_pixelFormat.greenMax),
+                    scaleComponent(b, this->m_pixelFormat.blueMax));
     }
 
     // Fallback for non true-color formats (approximate as grayscale)
@@ -1975,45 +1969,45 @@ QRgb VNCGraphicsClient::decodePixel(const uchar* data) const
 
 quint8 VNCGraphicsClient::readU8()
 {
-    quint8 value = (quint8) this->_readBuffer.at(0);
-    this->_readBuffer.remove(0, 1);
+    quint8 value = (quint8) this->m_readBuffer.at(0);
+    this->m_readBuffer.remove(0, 1);
     return value;
 }
 
 quint16 VNCGraphicsClient::readU16()
 {
-    quint16 value = qFromBigEndian<quint16>((const uchar*) this->_readBuffer.constData());
-    this->_readBuffer.remove(0, 2);
+    quint16 value = qFromBigEndian<quint16>((const uchar*) this->m_readBuffer.constData());
+    this->m_readBuffer.remove(0, 2);
     return value;
 }
 
 quint32 VNCGraphicsClient::readU32()
 {
-    quint32 value = qFromBigEndian<quint32>((const uchar*) this->_readBuffer.constData());
-    this->_readBuffer.remove(0, 4);
+    quint32 value = qFromBigEndian<quint32>((const uchar*) this->m_readBuffer.constData());
+    this->m_readBuffer.remove(0, 4);
     return value;
 }
 
 void VNCGraphicsClient::writeU8(quint8 value)
 {
-    this->_vncStream->write((const char*) &value, 1);
+    this->m_vncStream->write((const char*) &value, 1);
 }
 
 void VNCGraphicsClient::writeU16(quint16 value)
 {
     quint16 bigEndian = qToBigEndian(value);
-    this->_vncStream->write((const char*) &bigEndian, 2);
+    this->m_vncStream->write((const char*) &bigEndian, 2);
 }
 
 void VNCGraphicsClient::writeU32(quint32 value)
 {
     quint32 bigEndian = qToBigEndian(value);
-    this->_vncStream->write((const char*) &bigEndian, 4);
+    this->m_vncStream->write((const char*) &bigEndian, 4);
 }
 
 QByteArray VNCGraphicsClient::readBytes(int count)
 {
-    QByteArray data = this->_readBuffer.left(count);
-    this->_readBuffer.remove(0, count);
+    QByteArray data = this->m_readBuffer.left(count);
+    this->m_readBuffer.remove(0, count);
     return data;
 }

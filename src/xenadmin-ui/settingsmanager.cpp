@@ -280,13 +280,11 @@ void SettingsManager::SaveConnection(const QString& id, const ConnectionInfo& in
         if (encryptedPassword.isEmpty())
         {
             qWarning() << "SettingsManager: Failed to encrypt password for connection" << id << "- keeping existing value";
-        }
-        else
+        } else
         {
             this->m_settings->setValue("password", encryptedPassword);
         }
-    }
-    else
+    } else
     {
         this->m_settings->remove("password");
     }

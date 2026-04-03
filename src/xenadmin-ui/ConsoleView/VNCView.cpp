@@ -53,7 +53,7 @@ VNCView::VNCView(QSharedPointer<VM> vm,  const QString& elevatedUsername, const 
 
     this->m_vm = vm;
 
-    qDebug() << "VNCView: Constructor for VM:" << vm->GetName();
+    //qDebug() << "VNCView: Constructor for VM:" << vm->GetName();
 
     Q_ASSERT(QThread::currentThread() == QApplication::instance()->thread());
 
@@ -66,7 +66,7 @@ VNCView::VNCView(QSharedPointer<VM> vm,  const QString& elevatedUsername, const 
     // Register event listeners
     this->registerEventListeners();
 
-    qDebug() << "VNCView: Constructor complete";
+    //qDebug() << "VNCView: Constructor complete";
 }
 
 /**
@@ -75,7 +75,7 @@ VNCView::VNCView(QSharedPointer<VM> vm,  const QString& elevatedUsername, const 
  */
 VNCView::~VNCView()
 {
-    qDebug() << "VNCView: Destructor";
+    //qDebug() << "VNCView: Destructor";
 
     Q_ASSERT(QThread::currentThread() == QApplication::instance()->thread());
 
@@ -102,7 +102,7 @@ bool VNCView::IsDocked() const
 
 void VNCView::Pause()
 {
-    qDebug() << "VNCView: pause()";
+    //qDebug() << "VNCView: pause()";
 
     if (this->m_vncTabView)
         this->m_vncTabView->Pause();
@@ -110,7 +110,7 @@ void VNCView::Pause()
 
 void VNCView::Unpause()
 {
-    qDebug() << "VNCView: unpause()";
+    //qDebug() << "VNCView: unpause()";
 
     if (this->m_vncTabView)
         this->m_vncTabView->Unpause();
@@ -118,7 +118,7 @@ void VNCView::Unpause()
 
 void VNCView::DockUnDock()
 {
-    qDebug() << "VNCView: dockUnDock() - current state:" << (this->IsDocked() ? "docked" : "undocked");
+    //qDebug() << "VNCView: dockUnDock() - current state:" << (this->IsDocked() ? "docked" : "undocked");
 
     if (this->IsDocked())
     {
@@ -272,12 +272,12 @@ void VNCView::DockUnDock()
     // TODO: Reconnect RDP with new dimensions
     // C#: UpdateRDPResolution();
 
-    qDebug() << "VNCView: Dock/undock complete, new state:" << (this->IsDocked() ? "docked" : "undocked");
+    //qDebug() << "VNCView: Dock/undock complete, new state:" << (this->IsDocked() ? "docked" : "undocked");
 }
 
 void VNCView::SendCAD()
 {
-    qDebug() << "VNCView: sendCAD()";
+    //qDebug() << "VNCView: sendCAD()";
 
     if (this->m_vncTabView)
         this->m_vncTabView->SendCAD();
@@ -285,7 +285,7 @@ void VNCView::SendCAD()
 
 void VNCView::FocusConsole()
 {
-    qDebug() << "VNCView: focusConsole()";
+    //qDebug() << "VNCView: focusConsole()";
 
     if (this->m_vncTabView)
     {
@@ -297,7 +297,7 @@ void VNCView::FocusConsole()
 
 void VNCView::SwitchIfRequired()
 {
-    qDebug() << "VNCView: switchIfRequired()";
+    //qDebug() << "VNCView: switchIfRequired()";
 
     if (this->m_vncTabView)
     {
@@ -308,7 +308,7 @@ void VNCView::SwitchIfRequired()
 
 QImage VNCView::Snapshot()
 {
-    qDebug() << "VNCView: snapshot()";
+    //qDebug() << "VNCView: snapshot()";
 
     if (this->m_vncTabView)
         return this->m_vncTabView->Snapshot();
@@ -318,7 +318,7 @@ QImage VNCView::Snapshot()
 
 void VNCView::RefreshIsoList()
 {
-    qDebug() << "VNCView: refreshIsoList()";
+    //qDebug() << "VNCView: refreshIsoList()";
 
     if (this->m_vncTabView)
         this->m_vncTabView->SetupCD();
@@ -326,7 +326,7 @@ void VNCView::RefreshIsoList()
 
 void VNCView::UpdateRDPResolution(bool fullscreen)
 {
-    qDebug() << "VNCView: updateRDPResolution() - fullscreen:" << fullscreen;
+    //qDebug() << "VNCView: updateRDPResolution() - fullscreen:" << fullscreen;
 
     if (this->m_vncTabView)
     {
@@ -339,7 +339,7 @@ void VNCView::UpdateRDPResolution(bool fullscreen)
 
 void VNCView::onVMPropertyChanged(const QString& propertyName)
 {
-    qDebug() << "VNCView: onVMPropertyChanged:" << propertyName;
+    //qDebug() << "VNCView: onVMPropertyChanged:" << propertyName;
 
     // Update undocked window title if name changed
     if (propertyName == "name_label" && this->m_undockedForm)
@@ -421,7 +421,7 @@ void VNCView::onUndockedWindowResizeEnd()
 
 void VNCView::registerEventListeners()
 {
-    qDebug() << "VNCView: registerEventListeners()";
+    //qDebug() << "VNCView: registerEventListeners()";
 
     // Connect VNCTabView signals (C#: VNCTabView calls parentVNCView.DockUnDock())
     if (this->m_vncTabView)
@@ -447,7 +447,7 @@ void VNCView::registerEventListeners()
 
 void VNCView::unregisterEventListeners()
 {
-    qDebug() << "VNCView: unregisterEventListeners()";
+    // qDebug() << "VNCView: unregisterEventListeners()";
 
     // Disconnect VNCTabView signals
     if (this->m_vncTabView)

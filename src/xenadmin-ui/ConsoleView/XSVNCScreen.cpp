@@ -48,7 +48,6 @@
 #include "xenlib/xen/network.h"
 #include "network/httpconnect.h"
 
-// TODO: Forward declare VNCTabView and RdpClient when they exist
 class VNCTabView;
 class RdpClient;
 
@@ -59,10 +58,10 @@ class RdpClient;
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 147-177
  */
 XSVNCScreen::XSVNCScreen(const QString& sourceRef, VNCTabView* parent, XenConnection *connection, const QString& elevatedUsername, const QString& elevatedPassword)
-    : QWidget(nullptr), _sourceRef(sourceRef), _sourceIsPv(false), _connection(connection), _parentVNCTabView(parent) // TODO: Get from parent when VNCTabView exists
+    : QWidget(nullptr), _sourceRef(sourceRef), _connection(connection), _parentVNCTabView(parent) // TODO: Get from parent when VNCTabView exists
       , _elevatedUsername(elevatedUsername), _elevatedPassword(elevatedPassword), _focusColor(QApplication::palette().color(QPalette::Highlight))
 {
-    qDebug() << "XSVNCScreen: Constructor for source:" << this->_sourceRef;
+    //qDebug() << "XSVNCScreen: Constructor for source:" << this->_sourceRef;
 
     // Force handle creation (equivalent to C#: var _ = Handle;)
     // This ensures the widget has a native window handle for rendering
@@ -176,7 +175,7 @@ XSVNCScreen::~XSVNCScreen()
  * @brief Get desktop size from active console
  * Equivalent to C#: public Size DesktopSize => RemoteConsole?.DesktopSize ?? Size.Empty;
  */
-QSize XSVNCScreen::desktopSize() const
+QSize XSVNCScreen::GetDesktopSize() const
 {
     return this->_remoteConsole ? this->_remoteConsole->DesktopSize() : QSize();
 }
@@ -185,7 +184,7 @@ QSize XSVNCScreen::desktopSize() const
  * @brief Check if RDP version warning is needed
  * Equivalent to C#: public bool RdpVersionWarningNeeded => _rdpClient != null && _rdpClient.needsRdpVersionWarning;
  */
-bool XSVNCScreen::rdpVersionWarningNeeded() const
+bool XSVNCScreen::IsRDPVersionWarningNeeded() const
 {
     // Note: RdpClient uses FreeRDP which doesn't have Windows RDP version issues
     // This was for Windows native RDP ActiveX control version compatibility
@@ -196,7 +195,7 @@ bool XSVNCScreen::rdpVersionWarningNeeded() const
  * @brief Set VNC password (stored securely)
  * Equivalent to C#: private char[] _vncPassword
  */
-void XSVNCScreen::setVncPassword(const QString& password)
+void XSVNCScreen::SetVNCPassword(const QString& password)
 {
     this->_vncPassword = password.toUtf8();
 }
@@ -204,7 +203,7 @@ void XSVNCScreen::setVncPassword(const QString& password)
 /**
  * @brief Get VNC password
  */
-QString XSVNCScreen::vncPassword() const
+QString XSVNCScreen::GetVNCPassword() const
 {
     return QString::fromUtf8(this->_vncPassword);
 }
@@ -213,7 +212,7 @@ QString XSVNCScreen::vncPassword() const
  * @brief Set whether to use VNC (true) or RDP (false)
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 652-659
  */
-void XSVNCScreen::setUseVNC(bool value)
+void XSVNCScreen::SetUseVNC(bool value)
 {
     if (value != this->_useVNC)
     {
@@ -227,7 +226,7 @@ void XSVNCScreen::setUseVNC(bool value)
  * @brief Set whether to use source/hosted console
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 666-675
  */
-void XSVNCScreen::setUseSource(bool value)
+void XSVNCScreen::SetUseSource(bool value)
 {
     if (value != this->_useSource)
     {
@@ -237,7 +236,7 @@ void XSVNCScreen::setUseSource(bool value)
         // Update VNC client if it exists
         if (this->_vncClient)
         {
-            this->_vncClient->setUseSource(this->_useSource);
+            this->_vncClient->SetUseSource(this->_useSource);
         }
 
         // Trigger reconnection
@@ -252,7 +251,7 @@ void XSVNCScreen::setUseSource(bool value)
  * @brief Pause the remote console
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 234-241
  */
-void XSVNCScreen::pause()
+void XSVNCScreen::Pause()
 {
     if (this->_remoteConsole)
     {
@@ -265,7 +264,7 @@ void XSVNCScreen::pause()
  * @brief Unpause the remote console
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 243-251
  */
-void XSVNCScreen::unpause()
+void XSVNCScreen::Unpause()
 {
     if (this->_remoteConsole)
     {
@@ -277,7 +276,7 @@ void XSVNCScreen::unpause()
 /**
  * @brief Send Ctrl+Alt+Del to remote console
  */
-void XSVNCScreen::sendCAD()
+void XSVNCScreen::SendCAD()
 {
     if (this->_remoteConsole)
     {
@@ -285,7 +284,7 @@ void XSVNCScreen::sendCAD()
     }
 }
 
-void XSVNCScreen::sendFunctionKeyWithModifiers(bool ctrl, bool alt, int functionNumber)
+void XSVNCScreen::SendFunctionKeyWithModifiers(bool ctrl, bool alt, int functionNumber)
 {
     if (this->_remoteConsole)
     {
@@ -296,7 +295,7 @@ void XSVNCScreen::sendFunctionKeyWithModifiers(bool ctrl, bool alt, int function
 /**
  * @brief Capture screenshot from console
  */
-QImage XSVNCScreen::snapshot()
+QImage XSVNCScreen::GetSnapshot()
 {
     if (this->_remoteConsole)
     {
@@ -308,7 +307,7 @@ QImage XSVNCScreen::snapshot()
 /**
  * @brief Set console scaling mode
  */
-void XSVNCScreen::setScaling(bool enabled)
+void XSVNCScreen::SetScaling(bool enabled)
 {
     qDebug() << "XSVNCScreen: setScaling:" << enabled;
 
@@ -319,7 +318,7 @@ void XSVNCScreen::setScaling(bool enabled)
 /**
  * @brief Get console IsScaling mode
  */
-bool XSVNCScreen::scaling() const
+bool XSVNCScreen::IsScaling() const
 {
     if (this->_remoteConsole)
         return this->_remoteConsole->IsScaling();
@@ -330,7 +329,7 @@ bool XSVNCScreen::scaling() const
 /**
  * @brief Check if must connect via remote desktop (GPU passthrough)
  */
-bool XSVNCScreen::mustConnectRemoteDesktop() const
+bool XSVNCScreen::MustConnectRemoteDesktop() const
 {
     qDebug() << "XSVNCScreen: mustConnectRemoteDesktop()";
 
@@ -352,7 +351,7 @@ bool XSVNCScreen::mustConnectRemoteDesktop() const
  * @brief Capture keyboard and mouse input to console
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 1288-1303
  */
-void XSVNCScreen::captureKeyboardAndMouse()
+void XSVNCScreen::CaptureKeyboardAndMouse()
 {
     qDebug() << "XSVNCScreen: captureKeyboardAndMouse()";
 
@@ -367,7 +366,7 @@ void XSVNCScreen::captureKeyboardAndMouse()
             this->setKeyboardAndMouseCapture(true);
         }
 
-        this->unpause();
+        this->Unpause();
     }
 
     // C#: DisableMenuShortcuts() - disable main window menu shortcuts
@@ -379,7 +378,7 @@ void XSVNCScreen::captureKeyboardAndMouse()
  * @brief Release keyboard and mouse capture from console
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 1276-1286
  */
-void XSVNCScreen::uncaptureKeyboardAndMouse()
+void XSVNCScreen::UncaptureKeyboardAndMouse()
 {
     qDebug() << "XSVNCScreen: uncaptureKeyboardAndMouse()";
 
@@ -440,13 +439,13 @@ void XSVNCScreen::setKeyboardAndMouseCapture(bool enabled)
 /**
  * @brief Disconnect and dispose all connections
  */
-void XSVNCScreen::disconnectAndDispose()
+void XSVNCScreen::DisconnectAndDispose()
 {
     {
         QMutexLocker locker(&this->_activeSessionLock);
         this->_activeSessionRef.clear();
     }
-    this->_hostedConsoleConnectionPending = false;
+    this->m_hostedConsoleConnectionPending = false;
     this->setPendingVNCConnection(nullptr);
 
     if (this->_remoteConsole)
@@ -666,7 +665,7 @@ void XSVNCScreen::onVMDataChanged(const QVariantMap& vmData)
         }
 
         // Start fresh connection attempt
-        this->startPolling();
+        this->StartPolling();
 
         // Also try to connect hosted console immediately (for dom0/control domains)
         if (isControlDomainZero(this->_sourceRef))
@@ -740,7 +739,7 @@ void XSVNCScreen::onGuestMetricsChanged(const QVariantMap& metricsData)
         // Restart polling to pick up new IP address
         if (this->_connectionPoller)
         {
-            this->startPolling();
+            this->StartPolling();
         }
     }
 }
@@ -753,7 +752,7 @@ void XSVNCScreen::onSettingsPropertyChanged(const QString& propertyName)
 {
     if (propertyName == "EnableRDPPolling")
     {
-        this->startPolling();
+        this->StartPolling();
     }
 }
 
@@ -947,7 +946,7 @@ bool XSVNCScreen::hasRDP() const
  * @brief Start polling for VNC/RDP ports on guest IP addresses
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 746-775
  */
-void XSVNCScreen::startPolling()
+void XSVNCScreen::StartPolling()
 {
     qDebug() << "XSVNCScreen: startPolling()";
 
@@ -963,7 +962,7 @@ void XSVNCScreen::startPolling()
     // If we're using hosted consoles (UseSource), skip guest polling entirely.
     // Hosted console discovery/connection is handled separately and polling the
     // guest IPs just burns sockets and UI time.
-    if (this->useSource())
+    if (this->GetUseSource())
     {
         qDebug() << "XSVNCScreen: Hosted console in use, skipping guest port polling";
         return;
@@ -1139,7 +1138,7 @@ void XSVNCScreen::onVncClientError(QObject* sender, const QString& error)
  */
 void XSVNCScreen::onDesktopResized()
 {
-    qDebug() << "XSVNCScreen: Desktop resized to:" << this->desktopSize();
+    qDebug() << "XSVNCScreen: Desktop resized to:" << this->GetDesktopSize();
 
     // Notify parent window that console size changed
     // Parent may need to adjust window size or scroll areas
@@ -1441,7 +1440,7 @@ void XSVNCScreen::connect()
     try
     {
         // C#: if (UseSource) { ConnectHostedConsole logic }
-        if (this->useSource())
+        if (this->GetUseSource())
         {
             // Use hosted console connection (console objects from XenAPI)
             // This tries all available rfb consoles until one works
@@ -1535,7 +1534,7 @@ void XSVNCScreen::connectNewHostedConsole()
         return;
     }
 
-    if (this->_hostedConsoleConnectionPending)
+    if (this->m_hostedConsoleConnectionPending)
     {
         qDebug() << "XSVNCScreen: Hosted console connection already pending";
         return;
@@ -1548,7 +1547,7 @@ void XSVNCScreen::connectNewHostedConsole()
     }
 
     // Check if we should use source (hosted console) vs detected IP
-    if (!this->useSource())
+    if (!this->GetUseSource())
     {
         qDebug() << "XSVNCScreen: Not using source, skipping hosted console";
         return;
@@ -1712,54 +1711,54 @@ bool XSVNCScreen::connectHostedConsole(VNCGraphicsClient* vncClient, const QStri
         qDebug() << "XSVNCScreen: Establishing HTTP CONNECT tunnel";
         qDebug() << "XSVNCScreen: Session ID prefix:" << sessionId.left(12) + "...";
 
-        this->_hostedConsoleConnectionPending = true;
+        this->m_hostedConsoleConnectionPending = true;
 
         // Create HTTPConnect instance for async connection
         HTTPConnect* httpConnect = new HTTPConnect(this);
 
         // Connect success signal
-        QObject::connect(httpConnect, &HTTPConnect::connectedToConsole, this,
-                         [this, vncClient, consoleRef, httpConnect, requestSessionId](QSslSocket* socket) {
-                             qDebug() << "XSVNCScreen: HTTP CONNECT tunnel established";
-                             this->_hostedConsoleConnectionPending = false;
+        QObject::connect(httpConnect, &HTTPConnect::connectedToConsole, this, [this, vncClient, consoleRef, httpConnect, requestSessionId](QSslSocket* socket, const QByteArray& initialData)
+        {
+             qDebug() << "XSVNCScreen: HTTP CONNECT tunnel established";
+             this->m_hostedConsoleConnectionPending = false;
 
-                             // Clean up HTTPConnect object
-                             httpConnect->deleteLater();
+             // Clean up HTTPConnect object
+             httpConnect->deleteLater();
 
-                             // Drop stale callbacks from an old session/connection cycle.
-                             if (this->currentConnectionSessionId() != requestSessionId || !this->useSource())
-                             {
-                                 qDebug() << "XSVNCScreen: Ignoring stale hosted-console success callback";
-                                 if (socket)
-                                 {
-                                     socket->disconnectFromHost();
-                                     socket->deleteLater();
-                                 }
-                                 return;
-                             }
+             // Drop stale callbacks from an old session/connection cycle.
+             if (this->currentConnectionSessionId() != requestSessionId || !this->GetUseSource())
+             {
+                 qDebug() << "XSVNCScreen: Ignoring stale hosted-console success callback";
+                 if (socket)
+                 {
+                     socket->disconnectFromHost();
+                     socket->deleteLater();
+                 }
+                 return;
+             }
 
-                             // Pass socket to invokeConnection
-                             this->invokeConnection(vncClient, socket, consoleRef);
-                         });
+             // Pass socket to invokeConnection
+             this->invokeConnection(vncClient, socket, consoleRef, initialData);
+         });
 
         // Connect error signal
-        QObject::connect(httpConnect, &HTTPConnect::error, this,
-                         [this, vncClient, httpConnect, requestSessionId](const QString& error) {
-                             qWarning() << "XSVNCScreen: HTTP CONNECT failed:" << error;
-                             this->_hostedConsoleConnectionPending = false;
+        QObject::connect(httpConnect, &HTTPConnect::error, this, [this, vncClient, httpConnect, requestSessionId](const QString& error)
+        {
+             qWarning() << "XSVNCScreen: HTTP CONNECT failed:" << error;
+             this->m_hostedConsoleConnectionPending = false;
 
-                             // Clean up HTTPConnect object
-                             httpConnect->deleteLater();
+             // Clean up HTTPConnect object
+             httpConnect->deleteLater();
 
-                             if (this->currentConnectionSessionId() != requestSessionId || !this->useSource())
-                             {
-                                 qDebug() << "XSVNCScreen: Ignoring stale hosted-console error callback";
-                                 return;
-                             }
+             if (this->currentConnectionSessionId() != requestSessionId || !this->GetUseSource())
+             {
+                 qDebug() << "XSVNCScreen: Ignoring stale hosted-console error callback";
+                 return;
+             }
 
-                             // Retry connection
-                             this->retryConnection(vncClient, error);
-                         });
+             // Retry connection
+             this->retryConnection(vncClient, error);
+         });
 
         // Start async connection
         httpConnect->connectToConsoleAsync(consoleUrl, sessionId);
@@ -1767,12 +1766,12 @@ bool XSVNCScreen::connectHostedConsole(VNCGraphicsClient* vncClient, const QStri
     } catch (const std::exception& e)
     {
         qWarning() << "XSVNCScreen: Exception in connectHostedConsole:" << e.what();
-        this->_hostedConsoleConnectionPending = false;
+        this->m_hostedConsoleConnectionPending = false;
         this->retryConnection(vncClient, QString::fromStdString(e.what()));
     } catch (...)
     {
         qWarning() << "XSVNCScreen: Unknown exception in connectHostedConsole";
-        this->_hostedConsoleConnectionPending = false;
+        this->m_hostedConsoleConnectionPending = false;
         this->retryConnection(vncClient, "Unknown error");
     }
     return false;
@@ -1782,7 +1781,7 @@ bool XSVNCScreen::connectHostedConsole(VNCGraphicsClient* vncClient, const QStri
  * @brief Invoke connection with open stream
  * Reference: XenAdmin/ConsoleView/XSVNCScreen.cs lines 1093-1115
  */
-void XSVNCScreen::invokeConnection(VNCGraphicsClient* vncClient, QTcpSocket* stream, const QString& consoleRef)
+void XSVNCScreen::invokeConnection(VNCGraphicsClient* vncClient, QTcpSocket* stream, const QString& consoleRef, const QByteArray& initialData)
 {
     qDebug() << "XSVNCScreen: invokeConnection()";
 
@@ -1793,7 +1792,7 @@ void XSVNCScreen::invokeConnection(VNCGraphicsClient* vncClient, QTcpSocket* str
     }
 
     // Invoke on main thread (equivalent to C# Program.Invoke)
-    QMetaObject::invokeMethod(this, [this, vncClient, stream, consoleRef]() {
+    QMetaObject::invokeMethod(this, [this, vncClient, stream, consoleRef, initialData]() {
         if (this->_vncClient != vncClient)
         {
             // We've been replaced
@@ -1816,7 +1815,7 @@ void XSVNCScreen::invokeConnection(VNCGraphicsClient* vncClient, QTcpSocket* str
             // Connect the VNC client with the stream
             // C#: v.Connect(stream, console?.location);
             QString password = QString::fromUtf8(this->_vncPassword);
-            vncClient->connect(stream, password);
+            vncClient->Connect(stream, password, initialData);
 
             qDebug() << "XSVNCScreen: VNC client connected successfully";
         }
@@ -1882,7 +1881,7 @@ void XSVNCScreen::retryConnection(VNCGraphicsClient* vncClient, const QString& e
         return;
     }
 
-    if (this->_hostedConsoleConnectionPending)
+    if (this->m_hostedConsoleConnectionPending)
     {
         qDebug() << "XSVNCScreen: Hosted console request already pending, suppressing retry storm";
         return;

@@ -109,7 +109,7 @@ class XSVNCScreen : public QWidget
          * @brief The VM or Host this console is connected to
          * Equivalent to C#: public VM Source { get; private set; }
          */
-        QString source() const
+        QString GetSource() const
         {
             return _sourceRef;
         }
@@ -118,23 +118,24 @@ class XSVNCScreen : public QWidget
          * @brief Desktop size of the remote console
          * Equivalent to C#: public Size DesktopSize
          */
-        QSize desktopSize() const;
+        QSize GetDesktopSize() const;
 
         /**
          * @brief Whether RDP version warning is needed
          * Equivalent to C#: public bool RdpVersionWarningNeeded
          */
-        bool rdpVersionWarningNeeded() const;
+        bool IsRDPVersionWarningNeeded() const;
 
         /**
          * @brief Whether user wants to manually switch protocol
-         * Equivalent to C#: public bool UserWantsToSwitchProtocol { get; set; }
+         * Equivalent to C#: public bool GetUserWantsToSwitchProtocol { get; set; }
          */
-        bool userWantsToSwitchProtocol() const
+        bool GetUserWantsToSwitchProtocol() const
         {
             return _userWantsToSwitchProtocol;
         }
-        void setUserWantsToSwitchProtocol(bool value)
+
+        void SetUserWantsToSwitchProtocol(bool value)
         {
             _userWantsToSwitchProtocol = value;
         }
@@ -143,7 +144,7 @@ class XSVNCScreen : public QWidget
          * @brief The currently active remote console (VNC or RDP)
          * Equivalent to C#: private IRemoteConsole RemoteConsole
          */
-        IRemoteConsole* remoteConsole() const
+        IRemoteConsole* GetRemoteConsole() const
         {
             return _remoteConsole;
         }
@@ -152,31 +153,32 @@ class XSVNCScreen : public QWidget
          * @brief VNC password for this VM (stored as char array for security)
          * Equivalent to C#: private char[] _vncPassword
          */
-        void setVncPassword(const QString& password);
-        QString vncPassword() const;
+        void SetVNCPassword(const QString& password);
+        QString GetVNCPassword() const;
 
         /**
          * @brief Elevated credentials for host console access
          */
-        QString elevatedUsername() const
+        QString GetElevatedUsername() const
         {
             return _elevatedUsername;
         }
-        QString elevatedPassword() const
+
+        QString SetElevatedPassword() const
         {
             return _elevatedPassword;
         }
 
         /**
          * @brief Whether to use VNC (true) or RDP (false)
-         * Equivalent to C#: public bool UseVNC { get; set; }
+         * Equivalent to C#: public bool GetUseVNC { get; set; }
          * Reference: XSVNCScreen.cs lines 652-659
          */
-        bool useVNC() const
+        bool GetUseVNC() const
         {
             return _useVNC;
         }
-        void setUseVNC(bool value);
+        void SetUseVNC(bool value);
 
         /**
          * @brief Whether to use hosted console (text/source console)
@@ -185,11 +187,11 @@ class XSVNCScreen : public QWidget
          * Equivalent to C#: public bool UseSource { get; set; }
          * Reference: XSVNCScreen.cs lines 666-675
          */
-        bool useSource() const
+        bool GetUseSource() const
         {
             return _useSource;
         }
-        void setUseSource(bool value);
+        void SetUseSource(bool value);
 
         /**
          * @brief Check if in default console mode
@@ -198,7 +200,7 @@ class XSVNCScreen : public QWidget
          * Equivalent to C#: private bool InDefaultConsole()
          * Reference: XSVNCScreen.cs lines 738-744
          */
-        bool inDefaultConsole() const
+        bool IsInDefaultConsole() const
         {
             return _useVNC && _useSource;
         }
@@ -207,11 +209,12 @@ class XSVNCScreen : public QWidget
          * @brief IP addresses detected for VNC/RDP
          * Equivalent to C#: public string RdpIp / public string VncIp
          */
-        QString rdpIp() const
+        QString GetRDPIp() const
         {
             return _rdpIp;
         }
-        QString vncIp() const
+
+        QString GetVNCIp() const
         {
             return _vncIp;
         }
@@ -220,11 +223,11 @@ class XSVNCScreen : public QWidget
          * @brief Auto-switch to RDP when it becomes available
          * Equivalent to C#: internal bool AutoSwitchRDPLater { get; set; }
          */
-        bool autoSwitchRDPLater() const
+        bool GetAutoSwitchRDPLater() const
         {
             return _autoSwitchRDPLater;
         }
-        void setAutoSwitchRDPLater(bool value)
+        void SetAutoSwitchRDPLater(bool value)
         {
             _autoSwitchRDPLater = value;
         }
@@ -235,31 +238,31 @@ class XSVNCScreen : public QWidget
          * @brief Pause the remote console (stop rendering/input)
          * Equivalent to C#: public void Pause()
          */
-        void pause();
+        void Pause();
 
         /**
          * @brief Unpause the remote console (resume rendering/input)
          * Equivalent to C#: public void Unpause()
          */
-        void unpause();
+        void Unpause();
 
         /**
          * @brief Start polling for VNC/RDP ports
          * Equivalent to C#: public void StartPolling()
          */
-        void startPolling();
+        void StartPolling();
 
         /**
          * @brief Disconnect and cleanup all console connections
          * Equivalent to C#: called in Dispose()
          */
-        void disconnectAndDispose();
+        void DisconnectAndDispose();
 
         /**
          * @brief Send Ctrl+Alt+Del to the remote console
          * Equivalent to C#: public void SendCAD()
          */
-        void sendCAD();
+        void SendCAD();
 
         /**
          * @brief Send function-key combo with optional Ctrl/Alt modifiers
@@ -267,40 +270,40 @@ class XSVNCScreen : public QWidget
          * @param alt Include Alt modifier
          * @param functionNumber Function key number (1-12)
          */
-        void sendFunctionKeyWithModifiers(bool ctrl, bool alt, int functionNumber);
+        void SendFunctionKeyWithModifiers(bool ctrl, bool alt, int functionNumber);
 
         /**
          * @brief Capture screenshot of console
          * Equivalent to C#: public Image Snapshot(...)
          */
-        QImage snapshot();
+        QImage GetSnapshot();
 
         /**
          * @brief Set console scaling mode
          * Equivalent to C#: public bool Scaling { get; set; }
          */
-        void setScaling(bool enabled);
-        bool scaling() const;
+        void SetScaling(bool enabled);
+        bool IsScaling() const;
 
         /**
          * @brief Check if must connect via remote desktop (GPU passthrough)
          * Equivalent to C#: public bool MustConnectRemoteDesktop()
          */
-        bool mustConnectRemoteDesktop() const;
+        bool MustConnectRemoteDesktop() const;
 
         /**
          * @brief Capture keyboard and mouse input to console
          * Equivalent to C#: internal void CaptureKeyboardAndMouse()
          * Reference: XSVNCScreen.cs lines 1288-1303
          */
-        void captureKeyboardAndMouse();
+        void CaptureKeyboardAndMouse();
 
         /**
          * @brief Release keyboard and mouse capture from console
          * Equivalent to C#: internal void UncaptureKeyboardAndMouse()
          * Reference: XSVNCScreen.cs lines 1276-1286
          */
-        void uncaptureKeyboardAndMouse();
+        void UncaptureKeyboardAndMouse();
 
         // ========== Callback Delegates (matching C# MethodInvoker) ==========
 
@@ -483,7 +486,7 @@ class XSVNCScreen : public QWidget
          * @brief Invoke connection with open stream
          * Equivalent to C#: private void InvokeConnection(VNCGraphicsClient v, Stream stream, Console console)
          */
-        void invokeConnection(VNCGraphicsClient* vncClient, QTcpSocket* stream, const QString& consoleRef);
+        void invokeConnection(VNCGraphicsClient* vncClient, QTcpSocket* stream, const QString& consoleRef, const QByteArray& initialData = QByteArray());
 
         /**
          * @brief Check if the source VM/host is running and should allow retry
@@ -559,7 +562,7 @@ class XSVNCScreen : public QWidget
 
         // Core state
         QString _sourceRef;             // VM or Host ref (C#: VM Source)
-        bool _sourceIsPv;               // Is source a PV VM? (C#: bool _sourceIsPv)
+        bool _sourceIsPv = false;               // Is source a PV VM? (C#: bool _sourceIsPv)
         XenConnection* _connection = nullptr;
         VNCTabView* _parentVNCTabView = nullptr;  // Parent view (C#: internal readonly VNCTabView)
         ConsoleKeyHandler* _keyHandler = nullptr; // Keyboard handler (C#: internal ConsoleKeyHandler)
@@ -589,7 +592,7 @@ class XSVNCScreen : public QWidget
         QTimer* _connectionPoller = nullptr;            // Polling timer (C#: Timer _connectionPoller)
         QString _rdpIp;                       // Detected RDP IP (C#: public string RdpIp)
         QString _vncIp;                       // Detected VNC IP (C#: public string VncIp)
-        bool _hostedConsoleConnectionPending = false; // Prevent concurrent hosted console attempts
+        bool m_hostedConsoleConnectionPending = false; // Prevent concurrent hosted console attempts
 
         // Hosted consoles
         QMutex _hostedConsolesLock;     // Lock for console list (C#: object _hostedConsolesLock)

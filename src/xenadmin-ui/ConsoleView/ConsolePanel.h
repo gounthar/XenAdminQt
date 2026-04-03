@@ -104,8 +104,15 @@ class ConsolePanel : public QWidget
          * @brief Reset all cached views (clear cache)
          * Reference: ConsolePanel.cs lines 66-69
          *
-         * Removes all cached VNCView instances. Called on disconnect.
-         * TODO: this isn't used yet
+         * Removes all cached VNCView instances.
+         *
+         * C# behavior:
+         * - Called from MainWindow when console settings change
+         *   (AutoSwitchToRDP or EnableRDPPolling), then current source is rebound.
+         *
+         * Qt status:
+         * - Not wired from MainWindow settingsChanged yet.
+         * TODO: wire this from MainWindow on equivalent console setting changes
          */
         void ResetAllViews();
 

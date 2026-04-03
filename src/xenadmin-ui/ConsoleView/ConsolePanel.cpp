@@ -128,6 +128,7 @@ void ConsolePanel::ResetAllViews()
 
     this->_vncViews.clear();
     this->m_currentVmRef.clear();
+    this->m_currentObject.clear();
 }
 
 void ConsolePanel::UnpauseActiveView(bool focus)
@@ -278,7 +279,7 @@ void ConsolePanel::SetCurrentSource(QSharedPointer<XenObject> xen_obj)
     // Refresh ISO list
     this->_activeVNCView->RefreshIsoList();
 
-    clearErrorMessage();
+    this->clearErrorMessage();
     this->m_currentVmRef = vmRef;
 }
 
