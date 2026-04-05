@@ -29,6 +29,9 @@
 #include "globals.h"
 #include "ui_navigationview.h"
 #include "../iconmanager.h"
+#include "../settingsmanager.h"
+#include "../connectionprofile.h"
+#include "xenadmin-ui/xensearch/treesearch.h"
 #include "xenlib/xen/network/connectionsmanager.h"
 #include "xenlib/xen/network/connection.h"
 #include "xenlib/xencache.h"
@@ -38,13 +41,10 @@
 #include "xenlib/xensearch/search.h"
 #include "xenlib/xensearch/query.h"
 #include "xenlib/xensearch/queries.h"
-#include "xenadmin-ui/xensearch/treesearch.h"
 #include "xenlib/xen/vm.h"
 #include "xenlib/xen/host.h"
 #include "xenlib/xen/pool.h"
 #include "xenlib/xen/sr.h"
-#include "../settingsmanager.h"
-#include "../connectionprofile.h"
 #include "xenlib/xensearch/groupingtag.h"
 #include "xenlib/xen/folder.h"
 #include "xenlib/folders/foldersmanager.h"
@@ -55,42 +55,6 @@
 #include <QScrollBar>
 
 using namespace XenSearch;
-
-QSharedPointer<Host> buildDisconnectedHostObject(XenConnection* connection, XenCache* cache)
-{
-    if (!connection)
-        return QSharedPointer<Host>();
-
-    const QString hostname = connection->GetHostname();
-    const QString ref = connection->GetPort() == 443
-        ? hostname
-        : QString("%1:%2").arg(hostname).arg(connection->GetPort());
-    QString displayName = hostname;
-
-    const QList<ConnectionProfile> profiles = SettingsManager::instance().LoadConnectionProfiles();
-    for (const ConnectionProfile& profile : profiles)
-    {
-        if (profile.GetHostname() == hostname && profile.GetPort() == connection->GetPort())
-        {
-            displayName = profile.DisplayName();
-            break;
-        }
-    }
-
-    QVariantMap record;
-    record["ref"] = ref;
-    record["opaqueRef"] = ref;
-    record["name_label"] = displayName;
-    record["name_description"] = QString();
-    record["hostname"] = hostname;
-    record["address"] = hostname;
-    record["enabled"] = false;
-
-    if (cache)
-        cache->Update(XenObjectType::Host, ref, record);
-
-    return QSharedPointer<Host>(new Host(connection, ref));
-}
 
 static bool isTypeRelevantForTree(const QString& type)
 {

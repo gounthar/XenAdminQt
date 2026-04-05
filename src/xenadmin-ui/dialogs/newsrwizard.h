@@ -130,11 +130,6 @@ class NewSRWizard : public QWizard
 
         void SetInitialSrType(SRType srType, bool lockTypes);
 
-        MainWindow* GetMainWindow() const
-        {
-            return this->m_mainWindow;
-        }
-
         QString GetServer() const
         {
             return this->m_server;
@@ -267,7 +262,6 @@ class NewSRWizard : public QWizard
         QVariantMap getSMConfig() const;
         QString formatSRTypeString(SRType srType) const;
 
-        MainWindow* m_mainWindow;
         XenConnection* m_connection;
         Ui::NewSRWizard* ui;
         WizardNavigationPane* m_navigationPane = nullptr;

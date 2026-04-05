@@ -26,6 +26,7 @@
 * Properties of Hosts, VMs and Pools
 * Options
 * Maintenance mode
+* New SR wizard - HBA, iSCSI, NVMEoF, CIFS, NFS
 
 # Finished and tested
 * Add server

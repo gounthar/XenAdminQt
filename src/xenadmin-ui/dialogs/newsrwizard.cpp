@@ -93,10 +93,7 @@ namespace
     }
 }
 
-NewSRWizard::NewSRWizard(XenConnection* connection, MainWindow* parent) : QWizard(parent),
-      m_mainWindow(parent),
-      m_connection(connection),
-      ui(new Ui::NewSRWizard)
+NewSRWizard::NewSRWizard(XenConnection* connection, MainWindow* parent) : QWizard(parent), m_connection(connection), ui(new Ui::NewSRWizard)
 {
     this->ui->setupUi(this);
     this->setWindowTitle(tr("New Storage Repository"));
@@ -131,7 +128,7 @@ NewSRWizard::~NewSRWizard()
 
 void NewSRWizard::SetInitialSrType(SRType srType, bool lockTypes)
 {
-    setSrTypeSelection(srType, lockTypes);
+    this->setSrTypeSelection(srType, lockTypes);
 }
 
 void NewSRWizard::setupPages()
@@ -168,8 +165,7 @@ void NewSRWizard::initializeTypePage()
     this->m_typeButtonGroup->addButton(this->ui->nfsIsoRadio, static_cast<int>(SRType::NFS_ISO));
     this->m_typeButtonGroup->addButton(this->ui->cifsIsoRadio, static_cast<int>(SRType::CIFS_ISO));
 
-    this->connect(this->m_typeButtonGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked),
-            this, &NewSRWizard::onSRTypeChanged);
+    this->connect(this->m_typeButtonGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonClicked), this, &NewSRWizard::onSRTypeChanged);
 }
 
 void NewSRWizard::initializeNamePage()

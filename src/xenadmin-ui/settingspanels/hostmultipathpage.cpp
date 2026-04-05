@@ -98,7 +98,6 @@ AsyncOperation* HostMultipathPage::SaveSettings()
     if (!this->HasChanged())
         return nullptr;
 
-    // Create Host object
     XenConnection* conn = this->connection();
     if (!conn)
     {
@@ -106,7 +105,8 @@ AsyncOperation* HostMultipathPage::SaveSettings()
         return nullptr;
     }
 
-    QSharedPointer<Host> host = QSharedPointer<Host>(new Host(conn, this->m_hostRef));
+    // TODO - we can probably just use m_object here which is likely already Host we need
+    QSharedPointer<Host> host = conn->GetCache()->ResolveObject<Host>(this->m_hostRef);
     
     // Create and return action
     bool enableMultipath = this->ui->multipathCheckBox->isChecked();
