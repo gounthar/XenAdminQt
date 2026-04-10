@@ -106,7 +106,7 @@ jobs:
             libfreerdp3-dev libwinpr3-dev \
             libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev
       - name: Install Qt
-        uses: Jurplel/install-qt-action@v3.1.1
+        uses: jurplel/install-qt-action@v4
         with:
           version: 6.7.0
           host: linux_arm64
