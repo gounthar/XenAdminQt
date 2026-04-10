@@ -1,3 +1,4 @@
+# Adds arm64 (ubuntu-24.04-arm + jurplel Qt 6.7) and riscv64 (ubuntu-24.04-riscv + system Qt) build jobs
 name: Build
 
 on:
