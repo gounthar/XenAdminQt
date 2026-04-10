@@ -103,7 +103,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config \
-            libfreerdp3-dev libwinpr3-dev \
+            
             libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
