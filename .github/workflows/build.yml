@@ -1,3 +1,4 @@
+# Adds arm64 (ubuntu-24.04-arm + jurplel Qt 6.7) and riscv64 (ubuntu-24.04-riscv + system Qt) build jobs
 name: Build
 
 on:
@@ -101,11 +102,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config \
-            libfreerdp3-dev libwinpr3-dev \
-            libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev
+          sudo apt-get install -y build-essential pkg-config libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev
       - name: Install Qt
-        uses: Jurplel/install-qt-action@v3.1.1
+        uses: jurplel/install-qt-action@v4
         with:
           version: 6.7.0
           host: linux_arm64
