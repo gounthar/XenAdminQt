@@ -2,7 +2,7 @@ file(GLOB_RECURSE XENLIB_SOURCES CONFIGURE_DEPENDS "*.cpp")
 
 qt_add_library(xenlib STATIC ${XENLIB_SOURCES})
 
-target_include_directories(xenlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(xenlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_definitions(xenlib PRIVATE XENLIB_LIBRARY)
 
 target_link_libraries(xenlib
