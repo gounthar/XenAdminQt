@@ -119,6 +119,30 @@ jobs:
           cd build
           make -j"$(nproc)"
 
+  build-riscv64-bananapi:
+    name: riscv64 / Qt (system) / Banana Pi F3
+    runs-on: [self-hosted, Linux, riscv64]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config \
+            qt6-base-dev qt6-charts-dev \
+            libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev
+      - name: Show qmake version
+        run: qmake6 -v
+      - name: Configure project
+        run: |
+          mkdir -p build
+          cd build
+          qmake6 ../src/xenadminqt.pro
+      - name: Build project
+        run: |
+          cd build
+          time make -j"$(nproc)"
+
   build-riscv64:
     name: riscv64 / Qt (system) / native runner
     runs-on: ubuntu-24.04-riscv
