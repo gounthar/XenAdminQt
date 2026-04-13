@@ -201,6 +201,9 @@ jobs:
             cmake \
             ninja-build \
             qt6-base-dev
+          # Qt6 headers are arch-independent; installed by host qt6-base-dev.
+          # Re-sync sysroot includes so the cross-compiler finds QIcon etc.
+          sudo cp -a /usr/include/. /opt/riscv64-sysroot/usr/include/
 
       - name: Locate host Qt6 tools path
         run: |
