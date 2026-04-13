@@ -3,7 +3,15 @@ file(GLOB_RECURSE XENLIB_SOURCES CONFIGURE_DEPENDS "*.cpp")
 qt_add_library(xenlib STATIC ${XENLIB_SOURCES})
 
 target_include_directories(xenlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
-target_compile_definitions(xenlib PRIVATE XENLIB_LIBRARY)
+
+# XENLIB_LIBRARY (PRIVATE) enables Q_DECL_EXPORT when building the .a.
+# XENLIB_STATIC  (PUBLIC)  tells consumers the library is static so the
+# XENLIB_EXPORT macro stays empty — without it, MSVC consumers see
+# Q_DECL_IMPORT and fail to link against the static archive.
+target_compile_definitions(xenlib
+    PRIVATE XENLIB_LIBRARY
+    PUBLIC  XENLIB_STATIC
+)
 
 target_link_libraries(xenlib
     PUBLIC
