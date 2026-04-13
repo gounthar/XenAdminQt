@@ -178,7 +178,7 @@ jobs:
               -e '/^Architectures:/s/.*/Architectures: amd64/' \
               -e '/^Components:/a Architectures: amd64' \
               {} + 2>/dev/null || true
-          sudo apt-get update -q 2>&1 | grep -vE "^Ign|^(W|N):"
+          sudo apt-get update -q 2>&1 | { grep -vE "^Ign|^(W|N):" || true; }
           sudo apt-get install -y --no-install-recommends \
             qt6-base-dev:riscv64 \
             qt6-charts-dev:riscv64 \
@@ -204,18 +204,26 @@ jobs:
 
       - name: Locate host Qt6 tools path
         run: |
-          QT6_BIN=$(dirname "$(command -v qmake6 || command -v qmake)")
+          _qmake=$(command -v qmake6 || command -v qmake || true)
+          if [ -z "$_qmake" ]; then
+            echo "Error: neither qmake6 nor qmake found in PATH" >&2
+            exit 1
+          fi
+          QT6_BIN=$(dirname "$_qmake")
           QT_HOST_TOOLS=$(dirname "$QT6_BIN")
           echo "QT_HOST_TOOLS=$QT_HOST_TOOLS" >> "$GITHUB_ENV"
           echo "Host Qt6 tools at: $QT_HOST_TOOLS"
 
       - name: Configure (cross-compilation)
         run: |
+          SYSROOT=/opt/riscv64-sysroot
+          PKG_CONFIG_SYSROOT_DIR="$SYSROOT" \
+          PKG_CONFIG_LIBDIR="$SYSROOT/usr/lib/riscv64-linux-gnu/pkgconfig" \
           cmake -B build-cross \
             -DCMAKE_TOOLCHAIN_FILE=toolchains/riscv64-linux-gnu.cmake \
-            -DCMAKE_SYSROOT=/opt/riscv64-sysroot \
+            -DCMAKE_SYSROOT="$SYSROOT" \
             -DQT_HOST_PATH="$QT_HOST_TOOLS" \
-            -DQt6_DIR=/opt/riscv64-sysroot/usr/lib/riscv64-linux-gnu/cmake/Qt6 \
+            -DQt6_DIR="$SYSROOT/usr/lib/riscv64-linux-gnu/cmake/Qt6" \
             -DCMAKE_BUILD_TYPE=Release \
             -G Ninja
 
