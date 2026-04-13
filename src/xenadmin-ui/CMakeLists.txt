@@ -82,7 +82,6 @@ set(XENADMIN_SOURCES
     commands/template/instantvmfromtemplatecommand.cpp
     commands/template/newvmfromtemplatecommand.cpp
     commands/template/templatecommand.cpp
-    commands/vm/changecdisocommand.cpp
     commands/vm/clonevmcommand.cpp
     commands/vm/convertvmtotemplatecommand.cpp
     commands/vm/copyvmcommand.cpp
