@@ -121,7 +121,7 @@ jobs:
 
   build-riscv64-bananapi:
     name: riscv64 / Qt (system) / Banana Pi F3
-    runs-on: [self-hosted, Linux, riscv64]
+    runs-on: [self-hosted, linux, riscv64, bananapi-f3]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
